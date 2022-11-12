@@ -114,16 +114,14 @@ def HandleCard(driver, card):
     driver.switch_to.window(driver.window_handles[0])
         
 def LogIn(driver):
-    # Get credentials
-    load_dotenv()
-    username = os.getenv("USER")
-    password = os.getenv("PASSWORD")
-
     # Open the webpage
     driver.get("https://www.cardmarket.com/en/Magic")
 
     # Accept cookies (this takes care of future problems)
-    driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/button").click()
+    try:
+        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/button").click()
+    except:
+        pass
 
     # Log in
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[1]/div/input").send_keys(username)
@@ -140,12 +138,6 @@ def LogIn(driver):
     WaitForPage("/html/body/section/div[1]/div/div[3]/div/div/div[2]/div/div/a", driver)
     driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div/div/div[2]/div/div/a").click()
     WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]", driver)
-
-    # Check number of cards, this will be used to flip pages (each shows 30 cards)
-    numberCards = int(driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[1]/span[1]/span[1]/span").get_attribute("innerHTML"))
-    numberPages = math.ceil(numberCards / 30)
-
-    return numberPages
 
 def Reset(driver, page):
     global checkpoint
@@ -173,6 +165,7 @@ def Reset(driver, page):
 
     return checkpointPage
 
+
 # Check if a command line argument was given (page number to start from)
 pageToStart = 0
 if(len(sys.argv) > 1):
@@ -192,7 +185,16 @@ options.add_argument("--headless")
 options.add_argument("--window-size=1920,1080")
 driver = webdriver.Chrome(options = options, executable_path="D:\\Python3.11\\pip\\Selenium\\chromedriver.exe")
 
-numberPages = LogIn(driver)
+# Get credentials
+load_dotenv()
+username = os.getenv("USER")
+password = os.getenv("PASSWORD")
+
+LogIn(driver)
+
+# Check number of cards, this will be used to flip pages (each shows 30 cards)
+numberCards = int(driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[1]/span[1]/span[1]/span").get_attribute("innerHTML"))
+numberPages = math.ceil(numberCards / 30)
 
 # Skip to given start page (if it was given)
 if(pageToStart != 0):
@@ -214,7 +216,7 @@ while True:
             reset = HandleCard(driver, card)
             if reset:
                 break
-            time.sleep(0.5)   # Avoid rate limiting
+            time.sleep(1)   # Avoid rate limiting
 
         if reset:
             checkpointPage = Reset(driver, pageToStart + page)
