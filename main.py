@@ -88,7 +88,6 @@ def HandleCard(driver, card):
             priceField.clear()
             priceField.send_keys(str(newSellPrice))
             driver.find_element(By.XPATH, f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[4]/form/div[6]/div/div/button").click()
-
             # Wait for confirmation
             WaitForPage("/html/body/main/div[1]/div/div/h4", driver)
 
@@ -163,10 +162,10 @@ for page in range(numberPages):
         time.sleep(0.5)   # Avoid rate limiting
 
     # Next page if not last
-    if(page != numberPages):
+    if(page != numberPages - 1):
         driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[3]/span[3]/span[3]").click()
         time.sleep(3) # Prevent false positive
-        WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody", driver)
+        WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]/div/div/a", driver)
         
 print(f"Finished reviewing - Net change is {netChange} euros")
 driver.quit()
