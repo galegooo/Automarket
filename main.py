@@ -1,6 +1,7 @@
 import os
 import time
 import math
+import sys
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -13,20 +14,12 @@ from dotenv import load_dotenv
 
 
 def WaitForPage(element, driver):
-    # Get current URL for handling if wait exceed timeout
-    URL = driver.current_url
     try:
         WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
-        # Close all tabs, wait and relaunch URL
-        while True:
-            try:
-                driver.close()
-            except:
-                break
-
-        time.sleep(10)
-        driver.get(URL)
+        return True
+    
+    return False
 
 def HandleCard(driver, card):
     global netChange
@@ -47,13 +40,17 @@ def HandleCard(driver, card):
     driver.switch_to.window(driver.window_handles[1])
     driver.get(cardLink)
 
-    WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
+    reset = WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
+    if reset:
+        return True
 
     # If card is foil, check the box first
     if isFoil:
         driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
         time.sleep(1) # This is to avoid line below to give false positive
-        WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
+        reset = WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
+        if reset:
+            return True
 
     # Get current price trend. This differs with whether there is a foil version or not
     # Check for existence of foil version
@@ -75,34 +72,42 @@ def HandleCard(driver, card):
     # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same
     newSellPrice = round(0.9 * priceTrend, 2)
     if(sellPrice != newSellPrice):  # Values are different, change current sell price
+        # There can be more than 1 card listed
+        numberOfCard = 1
         while True:
-            # There can be more than 1 card listed
-            numberOfCard = 1
             try:
                 driver.find_element(By.XPATH, f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/button[2]").click()
             except:
                 break    # No more cards
 
-            WaitForPage(f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[4]/form/div[5]/div/input", driver)
+            reset = WaitForPage(f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[4]/form/div[5]/div/input", driver)
+            if reset:
+                return True
+
             priceField = driver.find_element(By.XPATH, f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[4]/form/div[5]/div/input")
             priceField.clear()
             priceField.send_keys(str(newSellPrice))
             driver.find_element(By.XPATH, f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[4]/form/div[6]/div/div/button").click()
+            
             # Wait for confirmation
-            WaitForPage("/html/body/main/div[1]/div/div/h4", driver)
+            reset = WaitForPage("/html/body/main/div[1]/div", driver)
+            if reset:
+                return True
 
             numberOfCard += 1
 
         print(f"Changed {cardName} from {sellPrice} euros to {newSellPrice} euros - Price trend is {priceTrend} euros.")
 
         # Update net change
-        netChange = netChange + newSellPrice - sellPrice
+        netChange = netChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
 
     # If it was foil, revert to normal mode
     if isFoil:
         driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
         time.sleep(1) # This is to avoid line below to give false positive
-        WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
+        reset = WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
+        if reset:
+            return True
 
     # All done, close tab
     driver.close()
@@ -116,6 +121,9 @@ def LogIn(driver):
 
     # Open the webpage
     driver.get("https://www.cardmarket.com/en/Magic")
+
+    # Accept cookies (this takes care of future problems)
+    driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/button").click()
 
     # Log in
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/button").click()
@@ -140,10 +148,43 @@ def LogIn(driver):
 
     return numberPages
 
+def Reset(driver, page):
+    global checkpoint
+
+    # Save current page
+    checkpointPage = page
+
+    print(f"An error occured. Re-logging in at page {checkpointPage}")
+
+    # Close all tabs
+    while True:
+        try:
+            driver.switch_to.window(driver.window_handles[0])
+            driver.close()
+        except:
+            break
+    
+    # Wait a bit
+    driver.quit()
+    time.sleep(60)
+
+    # Re-log in and go to checkpoint
+    LogIn(driver)
+    driver.get(checkpoint)
+
+    return checkpointPage
+
+# Check if a command line argument was given (page number to start from)
+pageToStart = 0
+if(len(sys.argv) > 1):
+    pageToStart = int(sys.argv[1])
 
 # This will be cool in the end
 global netChange
 netChange = 0
+
+# This helps in fault recovery
+global checkpoint
 
 # Setup browser options
 options = Options()
@@ -152,20 +193,44 @@ driver = webdriver.Chrome(options = options, executable_path="D:\\Python3.11\\pi
 
 numberPages = LogIn(driver)
 
-# Iterate through every card
-for page in range(numberPages):
-    print(f"Page {page}")
-    table = driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody")
-
-    for card in table.find_elements(By.XPATH, ".//tr"):
-        HandleCard(driver, card)
-        time.sleep(0.5)   # Avoid rate limiting
-
-    # Next page if not last
-    if(page != numberPages - 1):
+# Skip to given start page (if it was given)
+if(pageToStart != 0):
+    for page in range(pageToStart):
         driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[3]/span[3]/span[3]").click()
         time.sleep(3) # Prevent false positive
-        WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]/div/div/a", driver)
+        reset = WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]/div/div/a", driver)
+
+checkpointPage = pageToStart
+while True:
+    # Iterate through every card
+    for page in range(numberPages - checkpointPage):
+        checkpoint = driver.current_url
+        print(f"Page {page + pageToStart}")
+        table = driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody")
+
+        for card in table.find_elements(By.XPATH, ".//tr"):
+            reset = HandleCard(driver, card)
+            if reset:
+                break
+            time.sleep(0.5)   # Avoid rate limiting
+
+        if reset:
+            checkpointPage = Reset(driver, page)
+            break
+
+        # Next page if not last
+        if(page != numberPages - checkpointPage - 1):
+            driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[3]/span[3]/span[3]").click()
+            time.sleep(3) # Prevent false positive
+            reset = WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]/div/div/a", driver)
+        
+        if reset:
+            checkpointPage = Reset(driver, page)
+            break
+
+    if(page == numberPages - checkpointPage - 1):
+        break
+
         
 print(f"Finished reviewing - Net change is {netChange} euros")
 driver.quit()
