@@ -126,10 +126,9 @@ def LogIn(driver):
     driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/button").click()
 
     # Log in
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/button").click()
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/div[3]/div/form/div[1]/div/input").send_keys(username)
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/div[3]/div/form/div[2]/div/input").send_keys(password)
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/div[3]/div/form/input[3]").click()
+    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[1]/div/input").send_keys(username)
+    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[2]/div/input").send_keys(password)
+    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/input[3]").click()
 
     # Wait until page is loaded
     WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
@@ -189,6 +188,8 @@ global checkpoint
 # Setup browser options
 options = Options()
 options.binary_location = "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\Brave.exe"
+options.add_argument("--headless")
+options.add_argument("--window-size=1920,1080")
 driver = webdriver.Chrome(options = options, executable_path="D:\\Python3.11\\pip\\Selenium\\chromedriver.exe")
 
 numberPages = LogIn(driver)
@@ -196,6 +197,7 @@ numberPages = LogIn(driver)
 # Skip to given start page (if it was given)
 if(pageToStart != 0):
     for page in range(pageToStart):
+        print(f"Page {page}")
         driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[3]/span[3]/span[3]").click()
         time.sleep(3) # Prevent false positive
         reset = WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]/div/div/a", driver)
@@ -205,7 +207,7 @@ while True:
     # Iterate through every card
     for page in range(numberPages - checkpointPage):
         checkpoint = driver.current_url
-        print(f"Page {page + pageToStart}")
+        print(f"Page {page + checkpointPage}")
         table = driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody")
 
         for card in table.find_elements(By.XPATH, ".//tr"):
@@ -215,7 +217,7 @@ while True:
             time.sleep(0.5)   # Avoid rate limiting
 
         if reset:
-            checkpointPage = Reset(driver, page)
+            checkpointPage = Reset(driver, pageToStart + page)
             break
 
         # Next page if not last
