@@ -178,17 +178,17 @@ netChange = 0
 # This helps in fault recovery
 global checkpoint
 
+# Get environment variables
+load_dotenv()
+username = os.getenv("LOGINUSER")
+password = os.getenv("PASSWORD")
+
 # Setup browser options
 options = Options()
-options.binary_location = "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\Brave.exe"
+options.binary_location = os.getenv("BRAVE")
 options.add_argument("--headless")
 options.add_argument("--window-size=1920,1080")
-driver = webdriver.Chrome(options = options, executable_path="D:\\Python3.11\\pip\\Selenium\\chromedriver.exe")
-
-# Get credentials
-load_dotenv()
-username = os.getenv("USER")
-password = os.getenv("PASSWORD")
+driver = webdriver.Chrome(options = options, executable_path=os.getenv("CHROMEDRIVER"))
 
 LogIn(driver)
 
