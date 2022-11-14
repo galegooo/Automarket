@@ -114,6 +114,8 @@ def HandleCard(driver, card):
     driver.switch_to.window(driver.window_handles[0])
         
 def LogIn(driver):
+    global username, password
+
     # Open the webpage
     driver.get("https://www.cardmarket.com/en/Magic")
 
@@ -180,6 +182,7 @@ global checkpoint
 
 # Get environment variables
 load_dotenv()
+global username, password
 username = os.getenv("LOGINUSER")
 password = os.getenv("PASSWORD")
 
