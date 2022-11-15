@@ -117,7 +117,7 @@ def LogIn(driver):
     global username, password
 
     # Open the webpage
-    driver.get("https://www.cardmarket.com/en/Magic")
+    driver.get(os.getenv("URL"))
 
     # Accept cookies (this takes care of future problems)
     try:
