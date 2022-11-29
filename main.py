@@ -2,6 +2,7 @@ import os
 import time
 import math
 import sys
+import random
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -219,7 +220,7 @@ while True:
             reset = HandleCard(driver, card)
             if reset:
                 break
-            time.sleep(1)   # Avoid rate limiting
+            time.sleep(random.uniform(0.7, 3))   # Avoid rate limiting
 
         if reset:
             checkpointPage = Reset(driver, pageToStart + page)
