@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 
 def WaitForPage(element, driver):
     try:
-        WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.XPATH, element)))
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
         return True
     
