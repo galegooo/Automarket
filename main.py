@@ -202,8 +202,8 @@ numberPages = math.ceil(numberCards / 30)
 
 # Skip to given start page (if it was given)
 if(pageToStart != 0):
-    for page in range(pageToStart):
-        print(f"Page {page}")
+    for page in range(pageToStart - 1):
+        print(f"Page {page + 1}")
         driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[3]/span[3]/span[3]").click()
         time.sleep(3) # Prevent false positive
         reset = WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]/div/div/a", driver)
