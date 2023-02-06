@@ -47,11 +47,14 @@ def HandleCard(driver, card):
 
     # If card is foil, check the box first
     if isFoil:
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-        time.sleep(1) # This is to avoid line below to give false positive
-        reset = WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
-        if reset:
-            return True
+        try:    # Some cards only have a foil version
+            driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+            time.sleep(1) # This is to avoid line below to give false positive
+            reset = WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
+            if reset:
+                return True
+        except:
+            pass
 
     # Get current price trend. This differs with whether there is a foil version or not
     # Check for existence of foil version
@@ -104,11 +107,14 @@ def HandleCard(driver, card):
 
     # If it was foil, revert to normal mode
     if isFoil:
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-        time.sleep(1) # This is to avoid line below to give false positive
-        reset = WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
-        if reset:
-            return True
+        try:    # Some cards only have a foil version
+            driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+            time.sleep(1) # This is to avoid line below to give false positive
+            reset = WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
+            if reset:
+                return True
+        except:
+            pass
 
     # All done, close tab
     driver.close()
