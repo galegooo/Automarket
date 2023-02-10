@@ -74,7 +74,7 @@ def HandleCard(driver, card):
     sellPrice = float(driver.find_element(By.XPATH, "/html/body/main/div[4]/section[5]/div/div[2]/div[1]/div[3]/div[1]/div/div/span").get_attribute("innerHTML")[:-2].replace(',', '.'))
 
     # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same
-    newSellPrice = round(0.9 * priceTrend, 2)
+    newSellPrice = round(0.95 * priceTrend, 2)
     if(sellPrice != newSellPrice):  # Values are different, change current sell price
         # There can be more than 1 card listed
         numberOfCard = 1
