@@ -37,6 +37,7 @@ def HandleCard(driver, card):
     cardName = cardLink.split('/')[-1]
     print(f"Checking {cardName}")    
     
+    time.sleep(random.uniform(0.7, 3))   # Avoid rate limiting
     driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[1])
     driver.get(cardLink)
@@ -64,17 +65,21 @@ def HandleCard(driver, card):
     except:
         isThereFoilVersion = False
 
-    # Get current price trend (removing " $" and replacing ',' by '.')
+    # Get current price trend and price minimum (removing " $" and replacing ',' by '.')
     if isThereFoilVersion:
         priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+
+        priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
     else:
         priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+
+        priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
     # Get current sell price
     sellPrice = float(driver.find_element(By.XPATH, "/html/body/main/div[4]/section[5]/div/div[2]/div[1]/div[3]/div[1]/div/div/span").get_attribute("innerHTML")[:-2].replace(',', '.'))
 
     # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same
-    newSellPrice = round(0.95 * priceTrend, 2)
+    newSellPrice = round(abs(0.95 * (priceTrend - priceFrom)) + priceFrom, 2)
     if(sellPrice != newSellPrice):  # Values are different, change current sell price
         # There can be more than 1 card listed
         numberOfCard = 1
@@ -119,6 +124,8 @@ def HandleCard(driver, card):
     # All done, close tab
     driver.close()
     driver.switch_to.window(driver.window_handles[0])
+
+    return False
         
 def LogIn(driver):
     global username, password
@@ -165,7 +172,7 @@ def Reset(driver, page):
             break
     
     # Wait a bit
-    driver.quit()
+    #driver.quit()
     time.sleep(60)
 
     # Re-log in and go to checkpoint
@@ -176,7 +183,7 @@ def Reset(driver, page):
 
 
 # Check if a command line argument was given (page number to start from)
-pageToStart = 0
+pageToStart = 1
 if(len(sys.argv) > 1):
     pageToStart = int(sys.argv[1])
 
@@ -207,12 +214,32 @@ numberCards = int(driver.find_element(By.XPATH, "/html/body/section/div[1]/div/d
 numberPages = math.ceil(numberCards / 30)
 
 # Skip to given start page (if it was given)
-if(pageToStart != 0):
-    for page in range(pageToStart - 1):
-        print(f"Page {page + 1}")
-        driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[3]/span[3]/span[3]").click()
-        time.sleep(3) # Prevent false positive
-        reset = WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]/div/div/a", driver)
+if(pageToStart != 1):
+    skipURL = os.getenv("SKIP")
+    parameters = skipURL.split("&") # Want to change resultsPage
+
+    iter = 0
+    for param in parameters:
+        if(param.find("resultsPage") != -1):
+            parameters[iter] = "resultsPage=" + str(pageToStart)
+            break
+        iter += 1
+
+    # Put URL back together
+    goodURL = ""
+    iter = 0
+    for param in parameters:
+        # If not last
+        if(iter != len(parameters) - 1):
+            goodURL = goodURL + param + "&"
+        else:
+            goodURL = goodURL + param
+        iter += 1
+    
+    driver.get(goodURL)
+
+    # Wait for page to load
+    reset = WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody", driver)
 
 checkpointPage = pageToStart
 while True:
@@ -226,7 +253,6 @@ while True:
             reset = HandleCard(driver, card)
             if reset:
                 break
-            time.sleep(random.uniform(0.7, 3))   # Avoid rate limiting
 
         if reset:
             checkpointPage = Reset(driver, pageToStart + page)
@@ -235,7 +261,7 @@ while True:
         # Next page if not last
         if(page != numberPages - checkpointPage - 1):
             driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[3]/span[3]/span[3]").click()
-            time.sleep(3) # Prevent false positive
+            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             reset = WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]/div/div/a", driver)
         
         if reset:
