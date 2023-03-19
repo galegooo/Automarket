@@ -1,11 +1,10 @@
 import os
 import time
-import math
 import sys
 import random
+import signal
 
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -23,36 +22,41 @@ def WaitForPage(element, driver):
     return False
 
 def HandleCard(driver, card):
-    global netChange
+    global netChange, stageChange
 
     # Check if card is foil
     try:
-        card.find_element(By.XPATH, ".//td[7]/span")
+        card.find_element(By.XPATH, ".//div[3]/div/div[2]/div/div[1]/span[3]")
         isFoil = True
     except:
         isFoil = False
 
     # Get card page link and open in a new tab
-    cardLink = card.find_element(By.XPATH, ".//td[2]/div/div/a").get_attribute("href")
-    cardName = cardLink.split('/')[-1]
-    print(f"Checking {cardName}")    
+    try:
+        cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
+    except:
+        print("Couldn't get name of card ", card)
+        return True
     
-    time.sleep(random.uniform(0.7, 3))   # Avoid rate limiting
+    cardName = cardLink.split('/')[-1]
+    print(f"Checking {cardName}", end = "")    
+    
+    #time.sleep(random.uniform(0.7, 3))   # Avoid rate limiting
     driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[1])
     driver.get(cardLink)
 
-    reset = WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
-    if reset:
+    if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+        print("Timeout on opening tab for card ", cardName)
         return True
 
     # If card is foil, check the box first
     if isFoil:
         try:    # Some cards only have a foil version
             driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-            time.sleep(1) # This is to avoid line below to give false positive
-            reset = WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
-            if reset:
+            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+                print("Timeout on changing card ", cardName, " to foil")
                 return True
         except:
             pass
@@ -61,7 +65,7 @@ def HandleCard(driver, card):
     # Check for existence of foil version
     isThereFoilVersion = True
     try:
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[3]")
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label")
     except:
         isThereFoilVersion = False
 
@@ -78,6 +82,7 @@ def HandleCard(driver, card):
     # Get current sell price
     sellPrice = float(driver.find_element(By.XPATH, "/html/body/main/div[4]/section[5]/div/div[2]/div[1]/div[3]/div[1]/div/div/span").get_attribute("innerHTML")[:-2].replace(',', '.'))
 
+
     # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same
     newSellPrice = round(abs(0.95 * (priceTrend - priceFrom)) + priceFrom, 2)
     if(sellPrice != newSellPrice):  # Values are different, change current sell price
@@ -85,38 +90,41 @@ def HandleCard(driver, card):
         numberOfCard = 1
         while True:
             try:
-                driver.find_element(By.XPATH, f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/button[2]").click()
+                driver.find_element(By.XPATH, f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
             except:
                 break    # No more cards
 
-            reset = WaitForPage(f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[4]/form/div[5]/div/input", driver)
-            if reset:
+            if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
+                print("Timeout on changing card ", cardName, " price")
                 return True
 
-            priceField = driver.find_element(By.XPATH, f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[4]/form/div[5]/div/input")
+            priceField = driver.find_element(By.XPATH, "/html/body/div[3]/div/div/div[2]/div/form/div[5]/div/input")
             priceField.clear()
             priceField.send_keys(str(newSellPrice))
-            driver.find_element(By.XPATH, f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[4]/form/div[6]/div/div/button").click()
+            driver.find_element(By.XPATH, "/html/body/div[3]/div/div/div[2]/div/form/div[6]/button").click()
             
             # Wait for confirmation
-            reset = WaitForPage("/html/body/main/div[1]/div", driver)
-            if reset:
+            if WaitForPage("/html/body/main/div[1]/div", driver):
+                print("Timeout on price change confirmation for card ", cardName)
                 return True
 
             numberOfCard += 1
 
-        print(f"Changed {cardName} from {sellPrice} euros to {newSellPrice} euros - Price trend is {priceTrend} euros.")
+        print(f" -> changed from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
 
-        # Update net change
+        # Update net and stage change
         netChange = netChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
+        stageChange = stageChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
+    else:
+        print("")
 
     # If it was foil, revert to normal mode
     if isFoil:
         try:    # Some cards only have a foil version
             driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-            time.sleep(1) # This is to avoid line below to give false positive
-            reset = WaitForPage("/html/body/main/div[3]/div[1]/h1", driver)
-            if reset:
+            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+                print("Timeout on reverting foil on card ", cardName)
                 return True
         except:
             pass
@@ -124,7 +132,6 @@ def HandleCard(driver, card):
     # All done, close tab
     driver.close()
     driver.switch_to.window(driver.window_handles[0])
-
     return False
         
 def LogIn(driver):
@@ -143,7 +150,7 @@ def LogIn(driver):
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[1]/div/input").send_keys(username)
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[2]/div/input").send_keys(password)
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/input[3]").click()
-
+    
     # Wait until page is loaded
     WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
     print("Logged in")
@@ -151,48 +158,46 @@ def LogIn(driver):
     # Open active listings
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/ul/li[2]/a").click()
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/ul/li[2]/div/a[2]").click()
-    WaitForPage("/html/body/section/div[1]/div/div[3]/div/div/div[2]/div/div/a", driver)
-    driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div/div/div[2]/div/div/a").click()
-    WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]", driver)
+    WaitForPage("/html/body/main/div[4]/div/a", driver)
+    driver.find_element(By.XPATH, "/html/body/main/div[4]/div/a").click()
+    WaitForPage("/html/body/main/div[7]/div[2]/div[1]/div[3]/div/div[1]/a", driver)
 
-def Reset(driver, page):
-    global checkpoint
+def setPriceRange(driver, price, previousPrice):
+    if(price == 1):
+        print(f"Checking from {price}")
+        # Filter by price
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[1]/input").send_keys(price)
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
+    else:
+        print(f"\nChecking from {price} to {previousPrice}")
 
-    # Save current page
-    checkpointPage = page
+        # Filter by price
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[1]/input").clear()
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[1]/input").send_keys(price)
 
-    print(f"An error occured. Re-logging in at page {checkpointPage}")
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[2]/input").clear()
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[2]/input").send_keys(previousPrice)
 
-    # Close all tabs
-    while True:
-        try:
-            driver.switch_to.window(driver.window_handles[0])
-            driver.close()
-        except:
-            break
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
+
+    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+    WaitForPage("/html/body/main/div[6]/div[2]", driver)
+
+def handler(signum, frame):
+    print(f"User terminated program - Net change is {round(netChange, 2)}")
+    quit()
     
-    # Wait a bit
-    #driver.quit()
-    time.sleep(60)
+signal.signal(signal.SIGINT, handler)
 
-    # Re-log in and go to checkpoint
-    LogIn(driver)
-    driver.get(checkpoint)
-
-    return checkpointPage
-
-
-# Check if a command line argument was given (page number to start from)
-pageToStart = 1
+# Check if a command line argument was given (price to start from)
+priceToStart = 1
 if(len(sys.argv) > 1):
-    pageToStart = int(sys.argv[1])
+    priceToStart = float(sys.argv[1])
 
-# This will be cool in the end
-global netChange
+# Show overall change in the end
+global netChange, stageChange
 netChange = 0
-
-# This helps in fault recovery
-global checkpoint
+stageChange = 0
 
 # Get environment variables
 load_dotenv()
@@ -201,76 +206,67 @@ username = os.getenv("LOGINUSER")
 password = os.getenv("PASSWORD")
 
 # Setup browser options
-options = Options()
+options = uc.ChromeOptions()
 options.binary_location = os.getenv("BRAVE")
-options.add_argument("--headless")
+options.add_argument('--disable-popup-blocking')
+options.add_argument("--headless=new")
 options.add_argument("--window-size=1920,1080")
-driver = webdriver.Chrome(options = options, executable_path=os.getenv("CHROMEDRIVER"))
+driver = uc.Chrome(use_subprocess=True, options=options, driver_executable_path=os.getenv("CHROMEDRIVER")) 
+
 
 LogIn(driver)
 
-# Check number of cards, this will be used to flip pages (each shows 30 cards)
-numberCards = int(driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[1]/span[1]/span[1]/span").get_attribute("innerHTML"))
-numberPages = math.ceil(numberCards / 30)
+checkpointPrice = priceToStart
+if(checkpointPrice == 1):
+    setPriceRange(driver, checkpointPrice,)
+else:
+    setPriceRange(driver, checkpointPrice, round(checkpointPrice + 0.1 * checkpointPrice, 2))
 
-# Skip to given start page (if it was given)
-if(pageToStart != 1):
-    skipURL = os.getenv("SKIP")
-    parameters = skipURL.split("&") # Want to change resultsPage
-
-    iter = 0
-    for param in parameters:
-        if(param.find("resultsPage") != -1):
-            parameters[iter] = "resultsPage=" + str(pageToStart)
-            break
-        iter += 1
-
-    # Put URL back together
-    goodURL = ""
-    iter = 0
-    for param in parameters:
-        # If not last
-        if(iter != len(parameters) - 1):
-            goodURL = goodURL + param + "&"
-        else:
-            goodURL = goodURL + param
-        iter += 1
-    
-    driver.get(goodURL)
-
-    # Wait for page to load
-    reset = WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody", driver)
-
-checkpointPage = pageToStart
+reset = False
+# Iterate through every card
 while True:
-    # Iterate through every card
-    for page in range(numberPages - checkpointPage):
-        checkpoint = driver.current_url
-        print(f"Page {page + checkpointPage}")
-        table = driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody")
+    # Check if range has more than 300 cards
+    tooManyCards = False
+    try:
+        driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
+        table = "/html/body/main/div[7]"
+        tooManyCards = True
+    except:
+        table = "/html/body/main/div[6]"
 
-        for card in table.find_elements(By.XPATH, ".//tr"):
-            reset = HandleCard(driver, card)
-            if reset:
-                break
-
-        if reset:
-            checkpointPage = Reset(driver, pageToStart + page)
+    table += "/div[2]/div"
+    cards = driver.find_elements(By.XPATH, table)
+    for card in cards:
+        if HandleCard(driver, card):
+            reset = True
             break
 
-        # Next page if not last
-        if(page != numberPages - checkpointPage - 1):
-            driver.find_element(By.XPATH, "/html/body/section/div[1]/div/div[3]/div[2]/div[3]/span[3]/span[3]").click()
-            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-            reset = WaitForPage("/html/body/section/div[1]/div/div[3]/div[2]/div[2]/table/tbody/tr[1]/td[2]/div/div/a", driver)
-        
-        if reset:
-            checkpointPage = Reset(driver, page)
-            break
-
-    if(page == numberPages - checkpointPage - 1):
+    if reset:
         break
 
+    # Check if there's another page
+    if not tooManyCards:
+        skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
+    else:
+        skipButton = "/html/body/main/div[6]/div[2]/div/a[2]"
+
+    try:
+        driver.find_element(By.XPATH, skipButton).click()
+        time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+        reset = WaitForPage("/html/body/main/div[6]/div[2]", driver)
+    except: # No more pages, change price range
+        previousPrice = checkpointPrice
+        checkpointPrice = round(checkpointPrice - 0.1 * checkpointPrice, 2)
+        if(checkpointPrice == previousPrice):
+            checkpointPrice -= 0.01
+        if(checkpointPrice < 0):
+            break
+
+        print(f"Finished range - Net change is {round(stageChange, 2)}")
+        stageChange = 0
+        setPriceRange(driver, checkpointPrice, previousPrice)
+
         
-print(f"Finished reviewing - Net change is {netChange} euros")
+print(f"Finished reviewing - Net change is {round(netChange, 2)}")
 driver.quit()
+quit()
