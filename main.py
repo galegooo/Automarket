@@ -218,7 +218,7 @@ LogIn(driver)
 
 checkpointPrice = priceToStart
 if(checkpointPrice == 1):
-    setPriceRange(driver, checkpointPrice,)
+    setPriceRange(driver, checkpointPrice, False)
 else:
     setPriceRange(driver, checkpointPrice, round(checkpointPrice + 0.1 * checkpointPrice, 2))
 
