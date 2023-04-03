@@ -41,7 +41,7 @@ def HandleCard(driver, card):
     cardName = cardLink.split('/')[-1]
     print(f"Checking {cardName}", end = "")    
     
-    #time.sleep(random.uniform(0.7, 3))   # Avoid rate limiting
+    time.sleep(random.uniform(1, 4))   # Avoid rate limiting
     driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[1])
     driver.get(cardLink)
@@ -180,8 +180,8 @@ def setPriceRange(driver, price, previousPrice):
 
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
 
-    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
     WaitForPage("/html/body/main/div[6]/div[2]", driver)
+    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
 
 def handler(signum, frame):
     print(f"User terminated program - Net change is {round(netChange, 2)}")
@@ -220,9 +220,25 @@ checkpointPrice = priceToStart
 if(checkpointPrice == 1):
     setPriceRange(driver, checkpointPrice, False)
 else:
-    setPriceRange(driver, checkpointPrice, round(checkpointPrice + 0.1 * checkpointPrice, 2))
+    previousPrice = round(checkpointPrice + 0.1 * checkpointPrice, 2)
+    setPriceRange(driver, checkpointPrice, previousPrice)
+
+while True:
+    # Check if new price range has more than 300 cards
+    try:
+        driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
+        print("Range has 300+ cards")
+        # If program reaches here, too many cards. Try to change price range again
+        if(checkpointPrice != previousPrice):
+            setPriceRange(driver, checkpointPrice, round(previousPrice - 0.01, 2))
+        else:
+            break
+    except:
+        break
 
 reset = False
+global lastCardChecked  # To make sure every card is read
+
 # Iterate through every card
 while True:
     # Check if range has more than 300 cards
@@ -253,19 +269,31 @@ while True:
     try:
         driver.find_element(By.XPATH, skipButton).click()
         time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-        reset = WaitForPage("/html/body/main/div[6]/div[2]", driver)
+        reset = WaitForPage(table, driver)
     except: # No more pages, change price range
         previousPrice = checkpointPrice
         checkpointPrice = round(checkpointPrice - 0.1 * checkpointPrice, 2)
         if(checkpointPrice == previousPrice):
-            checkpointPrice -= 0.01
+            checkpointPrice = round(checkpointPrice - 0.01, 2)
         if(checkpointPrice < 0):
             break
 
-        print(f"Finished range - Net change is {round(stageChange, 2)}")
+        print(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
         stageChange = 0
         setPriceRange(driver, checkpointPrice, previousPrice)
 
+        while True:
+            # Check if new price range has more than 300 cards
+            try:
+                driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
+                print("range has 300+ cards")
+                # If program reaches here, too many cards. Try to change price range again
+                if(checkpointPrice != previousPrice):
+                    setPriceRange(driver, checkpointPrice, round(previousPrice - 0.01, 2))
+                else:
+                    break
+            except:
+                break
         
 print(f"Finished reviewing - Net change is {round(netChange, 2)}")
 driver.quit()
