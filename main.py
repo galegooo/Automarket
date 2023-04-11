@@ -166,17 +166,17 @@ def setPriceRange(driver, price, priceCeil):
     if(price == 1):
         print(f"Checking from {price}")
         # Filter by price
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[1]/input").send_keys(price)
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
     else:
         print(f"\nChecking from {price} to {priceCeil}")
 
         # Filter by price
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[1]/input").clear()
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[1]/input").send_keys(price)
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").clear()
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
 
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[2]/input").clear()
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[2]/input").send_keys(priceCeil)
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").clear()
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").send_keys(priceCeil)
 
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
 
@@ -211,7 +211,8 @@ options.binary_location = os.getenv("BRAVE")
 options.add_argument('--disable-popup-blocking')
 options.add_argument("--headless=new")
 options.add_argument("--window-size=1920,1080")
-driver = uc.Chrome(use_subprocess=True, options=options, driver_executable_path=os.getenv("CHROMEDRIVER")) 
+driver = uc.Chrome(use_subprocess=True, options=options)
+# * driver_executable_path=os.getenv("CHROMEDRIVER") is not needed in Linux 
 
 
 LogIn(driver)
