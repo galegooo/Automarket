@@ -231,7 +231,7 @@ while True:
         print("Range has 300+ cards")
         # If program reaches here, too many cards. Try to change price range again
         if(priceFloor != priceCeil):
-            priceFloor =+ 0.01
+            priceFloor = round(priceFloor + 0.01, 2)
             setPriceRange(driver, priceFloor, priceCeil)
         else:
             break
@@ -263,6 +263,7 @@ while True:
         pass
 
     if reset:
+        print("Reset triggered")
         break
 
     # Check if there's another page
@@ -281,6 +282,7 @@ while True:
         if(priceFloor == priceCeil):
             priceFloor = round(priceFloor - 0.01, 2)
         if(priceFloor < 0):
+            print("Reached price floor < 0")
             break
 
         print(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
@@ -291,10 +293,10 @@ while True:
             # Check if new price range has more than 300 cards
             try:
                 driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
-                print("range has 300+ cards")
+                print("Range has 300+ cards")
                 # If program reaches here, too many cards. Try to change price range again
                 if(priceFloor != priceCeil):
-                    priceFloor =+ 0.01
+                    priceFloor = round(priceFloor + 0.01, 2)
                     setPriceRange(driver, priceFloor, priceCeil)
                 else:
                     break
