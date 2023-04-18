@@ -186,21 +186,21 @@ def setPriceRange(driver, price, priceCeil):
 def changePriceRange(priceFloor, driver, priceCeil):
     global stageChange, netChange
 
+    print(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
+    stageChange = 0
+
     priceCeil = round(priceFloor - 0.01, 2)
     if(priceCeil <= 0.1):
         priceFloor = priceCeil
         if(priceFloor < 0):
-            return True
+            return False, False
     else:
         priceFloor = round(priceFloor - 0.1 * priceFloor, 2)
         
-
-    print(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
-    stageChange = 0
     setPriceRange(driver, priceFloor, priceCeil)
     checkForMaxRange(driver, priceFloor, priceCeil)
 
-    return False
+    return priceFloor, priceCeil
 
 def handler(signum, frame):
     print(f"User terminated program - Net change is {round(netChange, 2)}")
@@ -285,7 +285,8 @@ while True:
                 break
     except:
         print("Found page with 0 cards")
-        if(changePriceRange(priceFloor, driver, priceCeil)):
+        priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
+        if(priceFloor == False):
             break
 
     if reset:
@@ -302,7 +303,8 @@ while True:
         time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
         reset = WaitForPage(table, driver)
     except: # No more pages, change price range
-        if(changePriceRange(priceFloor, driver, priceCeil)):
+        priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
+        if(priceFloor == False):
             break
         
 print(f"Finished reviewing - Net change is {round(netChange, 2)}")
