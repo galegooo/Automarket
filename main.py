@@ -166,27 +166,61 @@ def setPriceRange(driver, price, priceCeil):
     if(price == 1):
         print(f"Checking from {price}")
         # Filter by price
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[1]/input").send_keys(price)
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
     else:
         print(f"\nChecking from {price} to {priceCeil}")
 
         # Filter by price
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[1]/input").clear()
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[1]/input").send_keys(price)
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").clear()
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
 
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[2]/input").clear()
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[5]/div/div[2]/input").send_keys(priceCeil)
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").clear()
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").send_keys(priceCeil)
 
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
 
     WaitForPage("/html/body/main/div[6]/div[2]", driver)
     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
 
+def changePriceRange(priceFloor, driver, priceCeil):
+    global stageChange, netChange
+
+    priceCeil = round(priceFloor - 0.01, 2)
+    if(priceCeil <= 0.1):
+        priceFloor = priceCeil
+        if(priceFloor < 0):
+            return True
+    else:
+        priceFloor = round(priceFloor - 0.1 * priceFloor, 2)
+        
+
+    print(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
+    stageChange = 0
+    setPriceRange(driver, priceFloor, priceCeil)
+    checkForMaxRange(driver, priceFloor, priceCeil)
+
+    return False
+
 def handler(signum, frame):
     print(f"User terminated program - Net change is {round(netChange, 2)}")
     quit()
-    
+     
+def checkForMaxRange(driver, priceFloor, priceCeil):
+    while True:
+        # Check if new price range has more than 300 cards
+        try:
+            driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
+            print("Range has 300+ cards")
+            # If program reaches here, too many cards. Try to change price range again
+            if(priceFloor != priceCeil):
+                priceFloor = round(priceFloor + 0.01, 2)
+                setPriceRange(driver, priceFloor, priceCeil)
+            else:
+                break
+        except:
+            break
+
 signal.signal(signal.SIGINT, handler)
 
 # Check if a command line argument was given (price to start from)
@@ -219,23 +253,14 @@ LogIn(driver)
 priceFloor = priceToStart
 if(priceFloor == 1):
     setPriceRange(driver, priceFloor, False)
+elif(priceFloor <= 0.1):
+    priceCeil = priceFloor
+    setPriceRange(driver, priceFloor, priceCeil)
 else:
     priceCeil = round(priceFloor + 0.1 * priceFloor, 2)
     setPriceRange(driver, priceFloor, priceCeil)
 
-while True:
-    # Check if new price range has more than 300 cards
-    try:
-        driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
-        print("Range has 300+ cards")
-        # If program reaches here, too many cards. Try to change price range again
-        if(priceFloor != priceCeil):
-            priceFloor =+ 0.01
-            setPriceRange(driver, priceFloor, priceCeil)
-        else:
-            break
-    except:
-        break
+checkForMaxRange(driver, priceFloor, priceCeil)
 
 reset = False
 global lastCardChecked  # To make sure every card is read
@@ -259,7 +284,9 @@ while True:
                 reset = True
                 break
     except:
-        pass
+        print("Found page with 0 cards")
+        if(changePriceRange(priceFloor, driver, priceCeil)):
+            break
 
     if reset:
         break
@@ -275,30 +302,8 @@ while True:
         time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
         reset = WaitForPage(table, driver)
     except: # No more pages, change price range
-        priceCeil = round(priceFloor - 0.01, 2)
-        priceFloor = round(priceFloor - 0.1 * priceFloor, 2)
-        if(priceFloor == priceCeil):
-            priceFloor = round(priceFloor - 0.01, 2)
-        if(priceFloor < 0):
+        if(changePriceRange(priceFloor, driver, priceCeil)):
             break
-
-        print(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
-        stageChange = 0
-        setPriceRange(driver, priceFloor, priceCeil)
-
-        while True:
-            # Check if new price range has more than 300 cards
-            try:
-                driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
-                print("range has 300+ cards")
-                # If program reaches here, too many cards. Try to change price range again
-                if(priceFloor != priceCeil):
-                    priceFloor =+ 0.01
-                    setPriceRange(driver, priceFloor, priceCeil)
-                else:
-                    break
-            except:
-                break
         
 print(f"Finished reviewing - Net change is {round(netChange, 2)}")
 driver.quit()
