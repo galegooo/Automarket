@@ -21,8 +21,8 @@ def WaitForPage(element, driver):
     
     return False
 
-def HandleCard(driver, card):
-    global netChange, stageChange
+def HandleCard(driver, card, priceFloor, priceCeil):
+    global netChange, stageChange, cardsMoved
 
     # Check if card is foil
     try:
@@ -86,6 +86,9 @@ def HandleCard(driver, card):
     # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same
     newSellPrice = round(abs(0.95 * (priceTrend - priceFrom)) + priceFrom, 2)
     if(sellPrice != newSellPrice):  # Values are different, change current sell price
+        if(newSellPrice > priceCeil or newSellPrice < priceFloor):
+            cardsMoved += 1
+
         # There can be more than 1 card listed
         numberOfCard = 1
         while True:
@@ -163,15 +166,11 @@ def LogIn(driver):
     WaitForPage("/html/body/main/div[7]/div[2]/div[1]/div[3]/div/div[1]/a", driver)
 
 def setPriceRange(driver, price, priceCeil):
+    # Filter by price
     if(price == 1):
-        print(f"Checking from {price}")
-        # Filter by price
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
     else:
-        print(f"\nChecking from {price} to {priceCeil}")
-
-        # Filter by price
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").clear()
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
 
@@ -179,6 +178,11 @@ def setPriceRange(driver, price, priceCeil):
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").send_keys(priceCeil)
 
         driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
+
+    if(price != priceCeil):
+        print(f"\nChecking from {price} to {priceCeil}")
+    else:
+        print(f"\nChecking {price}")
 
     WaitForPage("/html/body/main/div[6]/div[2]", driver)
     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
@@ -198,7 +202,7 @@ def changePriceRange(priceFloor, driver, priceCeil):
         priceFloor = round(priceFloor - 0.1 * priceFloor, 2)
         
     setPriceRange(driver, priceFloor, priceCeil)
-    checkForMaxRange(driver, priceFloor, priceCeil)
+    priceFloor, priceCeil = checkForMaxRange(driver, priceFloor, priceCeil)
 
     return priceFloor, priceCeil
 
@@ -208,30 +212,30 @@ def handler(signum, frame):
      
 def checkForMaxRange(driver, priceFloor, priceCeil):
     while True:
-        # Check if new price range has more than 300 cards
+        # Check if price range has more than 300 cards
         try:
             driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
             print("Range has 300+ cards")
-            # If program reaches here, too many cards. Try to change price range again
+            # If program reaches here, too many cards. Try to change price range
             if(priceFloor != priceCeil):
                 priceFloor = round(priceFloor + 0.01, 2)
                 setPriceRange(driver, priceFloor, priceCeil)
             else:
                 break
         except:
+            print("Range has", driver.find_element(By.XPATH, "/html/body/main/div[5]/div[1]/span/span[1]").text, "cards")
             break
 
+    return priceFloor, priceCeil
+
+
+# Handle Ctrl+C from user
 signal.signal(signal.SIGINT, handler)
 
 # Check if a command line argument was given (price to start from)
 priceToStart = 1
 if(len(sys.argv) > 1):
     priceToStart = float(sys.argv[1])
-
-# Show overall change in the end
-global netChange, stageChange
-netChange = 0
-stageChange = 0
 
 # Get environment variables
 load_dotenv()
@@ -247,24 +251,26 @@ options.add_argument("--headless=new")
 options.add_argument("--window-size=1920,1080")
 driver = uc.Chrome(use_subprocess=True, options=options, driver_executable_path=os.getenv("CHROMEDRIVER")) 
 
+# Show overall change in the end
+global netChange, stageChange
+netChange = 0
+stageChange = 0
+
+# To make sure every card is seen
+global cardsMoved
 
 LogIn(driver)
 
 priceFloor = priceToStart
 if(priceFloor == 1):
-    setPriceRange(driver, priceFloor, False)
-elif(priceFloor <= 0.1):
-    priceCeil = priceFloor
-    setPriceRange(driver, priceFloor, priceCeil)
+    priceCeil = 1000
 else:
     priceCeil = round(priceFloor + 0.1 * priceFloor, 2)
-    setPriceRange(driver, priceFloor, priceCeil)
 
-checkForMaxRange(driver, priceFloor, priceCeil)
+setPriceRange(driver, priceFloor, priceCeil)
+priceFloor, priceCeil = checkForMaxRange(driver, priceFloor, priceCeil)
 
 reset = False
-global lastCardChecked  # To make sure every card is read
-
 # Iterate through every card
 while True:
     # Check if range has more than 300 cards
@@ -277,21 +283,47 @@ while True:
         table = "/html/body/main/div[6]"
 
     table += "/div[2]/div"
-    try:    # Page can have 0 cards
-        cards = driver.find_elements(By.XPATH, table)
-        for card in cards:
-            if HandleCard(driver, card):
-                reset = True
-                break
-    except:
-        print("Found page with 0 cards")
-        priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
-        if(priceFloor == False):
+    cards = driver.find_elements(By.XPATH, table)
+    cardsMoved = 0
+    for card in cards:
+        if HandleCard(driver, card, priceFloor, priceCeil):
+            reset = True
             break
 
     if reset:
         break
 
+    # * This method will eventually check cards that were already checked. Still, better to check twice than none. It may also happen that it doesn't check enough cards, still better than checking none
+    check = cardsMoved
+    while(cardsMoved != 0):
+        # Refresh page and check cards that underflew to this page (cardsMoved)
+        driver.refresh()
+        time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+        WaitForPage(table, driver)
+
+        # Check if range has more than 300 cards
+        tooManyCards = False
+        try:
+            driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
+            table = "/html/body/main/div[7]"
+            tooManyCards = True
+        except:
+            table = "/html/body/main/div[6]"
+
+        table += "/div[2]/div"
+
+        cards = driver.find_elements(By.XPATH, table)
+        iter = 0
+        check = cardsMoved
+        cardsMoved = 0
+        for card in reversed(cards):
+            if HandleCard(driver, card, priceFloor, priceCeil):
+                reset = True
+                break
+            iter += 1
+            if(iter == check):
+                break
+            
     # Check if there's another page
     if not tooManyCards:
         skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
@@ -301,7 +333,7 @@ while True:
     try:
         driver.find_element(By.XPATH, skipButton).click()
         time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-        reset = WaitForPage(table, driver)
+        WaitForPage(table, driver)
     except: # No more pages, change price range
         priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
         if(priceFloor == False):
