@@ -41,7 +41,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     cardName = cardLink.split('/')[-1]
     print(f"Checking {cardName}", end = "")    
     
-    time.sleep(random.uniform(1, 4))   # Avoid rate limiting
+    time.sleep(random.uniform(0.5, 3))   # Avoid rate limiting
     driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[1])
     driver.get(cardLink)
@@ -86,9 +86,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same
     newSellPrice = round(abs(0.95 * (priceTrend - priceFrom)) + priceFrom, 2)
     if(sellPrice != newSellPrice):  # Values are different, change current sell price
-        if(newSellPrice > priceCeil or newSellPrice < priceFloor):
-            cardsMoved += 1
-
         # There can be more than 1 card listed
         numberOfCard = 1
         while True:
@@ -112,6 +109,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 return True
 
             numberOfCard += 1
+            if(newSellPrice > priceCeil or newSellPrice < priceFloor):
+                cardsMoved += 1
 
         print(f" -> changed from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
 
@@ -140,8 +139,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 def LogIn(driver):
     global username, password
 
-    # Open the webpage
+    # Open the webpage and wait for it to load
     driver.get(os.getenv("URL"))
+    WaitForPage("/html/body/header/div[1]/div/div/form/button", driver)
 
     # Accept cookies (this takes care of future problems)
     try:
@@ -194,12 +194,11 @@ def changePriceRange(priceFloor, driver, priceCeil):
     stageChange = 0
 
     priceCeil = round(priceFloor - 0.01, 2)
-    if(priceCeil <= 0.1):
+    priceFloor = round(priceFloor - 0.1 * priceFloor, 2)
+    if(priceFloor < 0):
+        return False, False
+    elif(priceFloor > priceCeil):
         priceFloor = priceCeil
-        if(priceFloor < 0):
-            return False, False
-    else:
-        priceFloor = round(priceFloor - 0.1 * priceFloor, 2)
         
     setPriceRange(driver, priceFloor, priceCeil)
     priceFloor, priceCeil = checkForMaxRange(driver, priceFloor, priceCeil)
@@ -236,6 +235,8 @@ signal.signal(signal.SIGINT, handler)
 priceToStart = 1
 if(len(sys.argv) > 1):
     priceToStart = float(sys.argv[1])
+else:
+    priceToStart = float(input("From which price would you like to start? "))
 
 # Get environment variables
 load_dotenv()
