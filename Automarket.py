@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 def WaitForPage(element, driver):
     try:
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, element)))
+        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
         return True
     
@@ -46,18 +46,26 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     driver.switch_to.window(driver.window_handles[1])
     driver.get(cardLink)
 
-    if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-        print("Timeout on opening tab for card ", cardName)
-        return True
+    while True:
+        if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+            print(" - Timeout on opening tab for card", cardName)
+            driver.refresh()
+            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            continue
+        break
 
     # If card is foil, check the box first
     if isFoil:
         try:    # Some cards only have a foil version
-            driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-            if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-                print("Timeout on changing card ", cardName, " to foil")
-                return True
+            while True:
+                driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+                time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+                    print(" - Timeout on changing card", cardName, "to foil")
+                    driver.refresh()
+                    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    continue
+                break
         except:
             pass
 
@@ -95,8 +103,10 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 break    # No more cards
 
             if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
-                print("Timeout on changing card ", cardName, " price")
-                return True
+                print(" - Timeout on changing card", cardName, "price")
+                driver.refresh()
+                time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                continue
 
             priceField = driver.find_element(By.XPATH, "/html/body/div[3]/div/div/div[2]/div/form/div[5]/div/input")
             priceField.clear()
@@ -106,7 +116,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             # Wait for confirmation
             if WaitForPage("/html/body/main/div[1]/div", driver):
                 print("Timeout on price change confirmation for card ", cardName)
-                return True
+                driver.refresh()
+                time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                continue
 
             numberOfCard += 1
             if(newSellPrice > priceCeil or newSellPrice < priceFloor):
@@ -123,11 +135,15 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     # If it was foil, revert to normal mode
     if isFoil:
         try:    # Some cards only have a foil version
-            driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-            if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-                print("Timeout on reverting foil on card ", cardName)
-                return True
+            while True:
+                driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+                time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+                    print(" - Timeout on reverting foil on card", cardName)
+                    driver.refresh()
+                    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    continue
+                break
         except:
             pass
 
@@ -141,7 +157,7 @@ def LogIn(driver):
 
     # Open the webpage and wait for it to load
     driver.get(os.getenv("URL"))
-    WaitForPage("/html/body/header/div[1]/div/div/form/button", driver)
+    WaitForPage("/html/body/header/nav[1]/ul/li/div/form/div[1]/div/input", driver)
 
     # Accept cookies (this takes care of future problems)
     try:
@@ -227,81 +243,52 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
 
     return priceFloor, priceCeil
 
+def main():
+    # Handle Ctrl+C from user
+    signal.signal(signal.SIGINT, handler)
 
-# Handle Ctrl+C from user
-signal.signal(signal.SIGINT, handler)
+    # Check if a command line argument was given (price to start from)
+    priceToStart = 1
+    if(len(sys.argv) > 1):
+        priceToStart = float(sys.argv[1])
 
-# Check if a command line argument was given (price to start from)
-priceToStart = 1
-if(len(sys.argv) > 1):
-    priceToStart = float(sys.argv[1])
-else:
-    priceToStart = float(input("From which price would you like to start? "))
+    # Get environment variables
+    load_dotenv(".envDocker")
+    
+    global username, password
+    username = os.getenv("LOGINUSER")
+    password = os.getenv("PASSWORD")
 
-# Get environment variables
-load_dotenv()
-global username, password
-username = os.getenv("LOGINUSER")
-password = os.getenv("PASSWORD")
+    # Setup browser options
+    options = uc.ChromeOptions()
+    options.binary_location = os.getenv("BROWSER")
+    #options.add_argument('--disable-popup-blocking')
+    #options.add_argument("--headless=new")
+    #options.add_argument("--window-size=1920,1080")
+    driver = uc.Chrome(use_subprocess=True, options=options, driver_executable_path=os.getenv("CHROMEDRIVER")) 
 
-# Setup browser options
-options = uc.ChromeOptions()
-options.binary_location = os.getenv("BRAVE")
-options.add_argument('--disable-popup-blocking')
-options.add_argument("--headless=new")
-options.add_argument("--window-size=1920,1080")
-driver = uc.Chrome(use_subprocess=True, options=options, driver_executable_path=os.getenv("CHROMEDRIVER")) 
+    # Show overall change in the end
+    global netChange, stageChange
+    netChange = 0
+    stageChange = 0
 
-# Show overall change in the end
-global netChange, stageChange
-netChange = 0
-stageChange = 0
+    # To make sure every card is seen
+    global cardsMoved
 
-# To make sure every card is seen
-global cardsMoved
+    LogIn(driver)
 
-LogIn(driver)
+    priceFloor = priceToStart
+    if(priceFloor == 1):
+        priceCeil = 1000
+    else:
+        priceCeil = round(priceFloor + 0.1 * priceFloor, 2)
 
-priceFloor = priceToStart
-if(priceFloor == 1):
-    priceCeil = 1000
-else:
-    priceCeil = round(priceFloor + 0.1 * priceFloor, 2)
+    setPriceRange(driver, priceFloor, priceCeil)
+    priceFloor, priceCeil = checkForMaxRange(driver, priceFloor, priceCeil)
 
-setPriceRange(driver, priceFloor, priceCeil)
-priceFloor, priceCeil = checkForMaxRange(driver, priceFloor, priceCeil)
-
-reset = False
-# Iterate through every card
-while True:
-    # Check if range has more than 300 cards
-    tooManyCards = False
-    try:
-        driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
-        table = "/html/body/main/div[7]"
-        tooManyCards = True
-    except:
-        table = "/html/body/main/div[6]"
-
-    table += "/div[2]/div"
-    cards = driver.find_elements(By.XPATH, table)
-    cardsMoved = 0
-    for card in cards:
-        if HandleCard(driver, card, priceFloor, priceCeil):
-            reset = True
-            break
-
-    if reset:
-        break
-
-    # * This method will eventually check cards that were already checked. Still, better to check twice than none. It may also happen that it doesn't check enough cards, still better than checking none
-    check = cardsMoved
-    while(cardsMoved != 0):
-        # Refresh page and check cards that underflew to this page (cardsMoved)
-        driver.refresh()
-        time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-        WaitForPage(table, driver)
-
+    reset = False
+    # Iterate through every card
+    while True:
         # Check if range has more than 300 cards
         tooManyCards = False
         try:
@@ -312,34 +299,65 @@ while True:
             table = "/html/body/main/div[6]"
 
         table += "/div[2]/div"
-
         cards = driver.find_elements(By.XPATH, table)
-        iter = 0
-        check = cardsMoved
         cardsMoved = 0
-        for card in reversed(cards):
+        for card in cards:
             if HandleCard(driver, card, priceFloor, priceCeil):
                 reset = True
                 break
-            iter += 1
-            if(iter == check):
+
+        if reset:
+            break
+
+        # * This method will eventually check cards that were already checked. Still, better to check twice than none. It may also happen that it doesn't check enough cards, still better than checking none
+        check = cardsMoved
+        while(cardsMoved != 0):
+            # Refresh page and check cards that underflew to this page (cardsMoved)
+            driver.refresh()
+            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            WaitForPage(table, driver)
+
+            # Check if range has more than 300 cards
+            tooManyCards = False
+            try:
+                driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
+                table = "/html/body/main/div[7]"
+                tooManyCards = True
+            except:
+                table = "/html/body/main/div[6]"
+
+            table += "/div[2]/div"
+
+            cards = driver.find_elements(By.XPATH, table)
+            iter = 0
+            check = cardsMoved
+            cardsMoved = 0
+            for card in reversed(cards):
+                if HandleCard(driver, card, priceFloor, priceCeil):
+                    reset = True
+                    break
+                iter += 1
+                if(iter == check):
+                    break
+                
+        # Check if there's another page
+        if not tooManyCards:
+            skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
+        else:
+            skipButton = "/html/body/main/div[6]/div[2]/div/a[2]"
+
+        try:
+            driver.find_element(By.XPATH, skipButton).click()
+            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            WaitForPage(table, driver)
+        except: # No more pages, change price range
+            priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
+            if(priceFloor == False):
                 break
             
-    # Check if there's another page
-    if not tooManyCards:
-        skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
-    else:
-        skipButton = "/html/body/main/div[6]/div[2]/div/a[2]"
+    print(f"Finished reviewing - Net change is {round(netChange, 2)}")
+    driver.quit()
+    quit()
 
-    try:
-        driver.find_element(By.XPATH, skipButton).click()
-        time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-        WaitForPage(table, driver)
-    except: # No more pages, change price range
-        priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
-        if(priceFloor == False):
-            break
-        
-print(f"Finished reviewing - Net change is {round(netChange, 2)}")
-driver.quit()
-quit()
+if(__name__ == "__main__"):
+    main()
