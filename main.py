@@ -48,7 +48,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
     while True:
         if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-            print(" - Timeout on opening tab for card", cardName)
+            print(" - Timeout on opening tab for card", cardName, end = "")
             driver.refresh()
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             continue
@@ -57,11 +57,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     # If card is foil, check the box first
     if isFoil:
         try:    # Some cards only have a foil version
+            driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             while True:
-                driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-                time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-                    print(" - Timeout on changing card", cardName, "to foil")
+                    print(" - Timeout on changing card", cardName, "to foil", end = "")
                     driver.refresh()
                     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
@@ -103,7 +103,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 break    # No more cards
 
             if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
-                print(" - Timeout on changing card", cardName, "price")
+                print(" - Timeout on changing card", cardName, "price", end = "")
                 driver.refresh()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
@@ -115,7 +115,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             
             # Wait for confirmation
             if WaitForPage("/html/body/main/div[1]/div", driver):
-                print(" - Timeout on price change confirmation for card", cardName)
+                print(" - Timeout on price change confirmation for card", cardName, end = "")
                 driver.refresh()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
@@ -135,11 +135,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     # If it was foil, revert to normal mode
     if isFoil:
         try:    # Some cards only have a foil version
+            driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             while True:
-                driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-                time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-                    print(" - Timeout on reverting foil on card", cardName)
+                    print(" - Timeout on reverting foil on card", cardName, end = "")
                     driver.refresh()
                     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
@@ -255,7 +255,7 @@ def main():
         priceToStart = float(input("From which price would you like to start? "))
 
     # Get environment variables
-    load_dotenv(".env")
+    load_dotenv()
     global username, password
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
@@ -264,9 +264,9 @@ def main():
     options = uc.ChromeOptions()
     options.binary_location = os.getenv("BROWSER")
     options.add_argument('--disable-popup-blocking')
-    #options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
-    driver = uc.Chrome(use_subprocess=True, options=options, driver_executable_path=os.getenv("CHROMEDRIVER")) 
+    driver = uc.Chrome(use_subprocess=True, options=options)
 
     # Show overall change in the end
     global netChange, stageChange
