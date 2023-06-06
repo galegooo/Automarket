@@ -41,6 +41,21 @@ def HandleCard(driver, card, priceFloor, priceCeil):
         return True
     
     cardName = cardLink.split('/')[-1]
+
+    # Check if cardName has "isFoil=Y". If so, something went wrong
+    # if("isFoil=Y" in cardName):
+    #     try:    # Some cards only have a foil version
+    #         driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+    #         time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+    #         while True:
+    #             if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+    #                 logging.warning(f"Timeout on toggling foil on card {cardName}")
+    #                 driver.refresh()
+    #                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+    #                 continue
+    #             break
+    #     except:
+    #         pass
     logging.info(f"Checking {cardName}")    
     
     time.sleep(random.uniform(0.5, 3))   # Avoid rate limiting
@@ -50,7 +65,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
     while True:
         if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-            logging.warning(f" - Timeout on opening tab for card {cardName}")
+            logging.warning(f"Timeout on opening tab for card {cardName}")
             driver.refresh()
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             continue
@@ -63,7 +78,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             while True:
                 if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-                    logging.warning(f" - Timeout on changing card {cardName} to foil")
+                    logging.warning(f"Timeout on changing card {cardName} to foil")
                     driver.refresh()
                     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
@@ -105,7 +120,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 break    # No more cards
 
             if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
-                logging.warning(f" - Timeout on changing card {cardName} price")
+                logging.warning(f"Timeout on changing card {cardName} price")
                 driver.refresh()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
@@ -117,7 +132,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             
             # Wait for confirmation
             if WaitForPage("/html/body/main/div[1]/div", driver):
-                logging.warning(f" - Timeout on price change confirmation for card {cardName}")
+                logging.warning(f"Timeout on price change confirmation for card {cardName}")
                 driver.refresh()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
@@ -126,7 +141,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             if(newSellPrice > priceCeil or newSellPrice < priceFloor):
                 cardsMoved += 1
 
-        logging.info(f" -> changed from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
+        logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
 
         # Update net and stage change
         netChange = netChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
@@ -139,7 +154,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             while True:
                 if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-                    logging.warning(f" - Timeout on reverting foil on card {cardName}")
+                    logging.warning(f"Timeout on reverting foil on card {cardName}")
                     driver.refresh()
                     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
@@ -239,7 +254,7 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
                 break
         except:
             range = driver.find_element(By.XPATH, "/html/body/main/div[5]/div[1]/span/span[1]").text
-            logging.info(f"Range has {range} cards")
+            logging.info(f"\tRange has {range} cards")
             break
 
     return priceFloor, priceCeil
@@ -271,7 +286,7 @@ def main():
     options = uc.ChromeOptions()
     options.binary_location = os.getenv("BROWSER")
     options.add_argument('--disable-popup-blocking')
-    options.add_argument("--headless=new")
+    #options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
 
