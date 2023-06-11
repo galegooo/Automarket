@@ -175,25 +175,15 @@ def LogIn(driver):
     print("Logged in")
 
     # Open active listings
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/ul/li[2]/a").click()
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/ul/li[2]/div/a[2]").click()
-    WaitForPage("/html/body/main/div[4]/div/a", driver)
-    driver.find_element(By.XPATH, "/html/body/main/div[4]/div/a").click()
+    listingsLink = os.getenv("URL") + "/Stock/Offers/Singles"
+    driver.get(listingsLink)
     WaitForPage("/html/body/main/div[7]/div[2]/div[1]/div[3]/div/div[1]/a", driver)
 
 def setPriceRange(driver, price, priceCeil):
     # Filter by price
-    if(price == 1):
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
-    else:
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").clear()
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
-
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").clear()
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").send_keys(priceCeil)
-
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
+    URLaddon = f"?minPrice={price}&maxPrice={priceCeil}"
+    link = os.getenv("URL") + "/Stock/Offers/Singles" + URLaddon
+    driver.get(link)
 
     if(price != priceCeil):
         print(f"\nChecking from {price} to {priceCeil}")
@@ -264,7 +254,7 @@ def main():
     options = uc.ChromeOptions()
     options.binary_location = os.getenv("BROWSER")
     options.add_argument('--disable-popup-blocking')
-    options.add_argument("--headless=new")
+    #options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     driver = uc.Chrome(use_subprocess=True, options=options)
 
