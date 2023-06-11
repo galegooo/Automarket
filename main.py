@@ -187,7 +187,7 @@ def LogIn(driver):
     
     # Wait until page is loaded
     WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
-    print("Logged in")
+    logging.info("Logged in")
 
     # Open active listings
     listingsLink = os.getenv("URL") + "/Stock/Offers/Singles"
@@ -201,9 +201,9 @@ def setPriceRange(driver, price, priceCeil):
     driver.get(link)
 
     if(price != priceCeil):
-        print(f"\nChecking from {price} to {priceCeil}")
+        logging.info(f"\nChecking from {price} to {priceCeil}")
     else:
-        print(f"\nChecking {price}")
+        logging.info(f"\nChecking {price}")
 
     WaitForPage("/html/body/main/div[6]/div[2]", driver)
     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
