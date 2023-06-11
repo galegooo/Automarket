@@ -221,7 +221,7 @@ def setPriceRange(driver, price, priceCeil):
 def changePriceRange(priceFloor, driver, priceCeil):
     global stageChange, netChange
 
-    logging.info(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
+    logging.info(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}\n")
     stageChange = 0
 
     priceCeil = round(priceFloor - 0.01, 2)
@@ -265,7 +265,7 @@ def main():
 
     # Set up logging
     now = datetime.now()
-    filename = now.strftime("%Y%m%d_%H%M%S")
+    filename = now.strftime("/home/galego/Automarket/%Y%m%d_%H%M%S")
     logging.basicConfig(filename = filename, encoding = "utf-8", level = logging.INFO)
 
     # Check if a command line argument was given (price to start from)
@@ -286,7 +286,7 @@ def main():
     options = uc.ChromeOptions()
     options.binary_location = os.getenv("BROWSER")
     options.add_argument('--disable-popup-blocking')
-    #options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
 
