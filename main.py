@@ -40,7 +40,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
         logging.warning(f"Couldn't get name of card {card}")
         return True
     
-    print(cardLink)
     cardName = cardLink.split('/')[-1]
 
     # Check if cardName has "isFoil=Y". If so, something went wrong
@@ -191,31 +190,26 @@ def LogIn(driver):
     logging.info("Logged in")
 
     # Open active listings
-    listingsLink = os.getenv("URL") + "Stock/Offers/Singles"
-    driver.get(listingsLink)
-    #driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/ul/li[2]/a").click()
-    #driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/ul/li[2]/div/a[2]").click()
-    #WaitForPage("/html/body/main/div[4]/div/a", driver)
-    #driver.find_element(By.XPATH, "/html/body/main/div[4]/div/a").click()
+    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/ul/li[2]/a").click()
+    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/ul/li[2]/div/a[2]").click()
+    WaitForPage("/html/body/main/div[4]/div/a", driver)
+    driver.find_element(By.XPATH, "/html/body/main/div[4]/div/a").click()
     WaitForPage("/html/body/main/div[7]/div[2]/div[1]/div[3]/div/div[1]/a", driver)
 
 def setPriceRange(driver, price, priceCeil):
     # Filter by price
     if(price == 1):
-        URLaddon = f"?minPrice={price}&maxPrice=1000"
-        #driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
-        #driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
     else:
-        URLaddon = f"?minPrice={price}&maxPrice={priceCeil}"
-        #driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").clear()
-        #driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").clear()
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[1]/input").send_keys(price)
 
-        #driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").clear()
-        #driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").send_keys(priceCeil)
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").clear()
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[4]/div/div[2]/input").send_keys(priceCeil)
 
-        #driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
+        driver.find_element(By.XPATH, "/html/body/main/div[4]/div/form/div[6]/input").click()
 
-    driver.get(URLaddon)
     if(price != priceCeil):
         logging.info(f"Checking from {price} to {priceCeil}")
     else:
@@ -227,7 +221,7 @@ def setPriceRange(driver, price, priceCeil):
 def changePriceRange(priceFloor, driver, priceCeil):
     global stageChange, netChange
 
-    logging.info(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}\n")
+    logging.info(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
     stageChange = 0
 
     priceCeil = round(priceFloor - 0.01, 2)
@@ -271,7 +265,7 @@ def main():
 
     # Set up logging
     now = datetime.now()
-    filename = now.strftime("/home/galego/Automarket/%Y%m%d_%H%M%S")
+    filename = now.strftime("%Y%m%d_%H%M%S")
     logging.basicConfig(filename = filename, encoding = "utf-8", level = logging.INFO)
 
     # Check if a command line argument was given (price to start from)
@@ -292,7 +286,7 @@ def main():
     options = uc.ChromeOptions()
     options.binary_location = os.getenv("BROWSER")
     options.add_argument('--disable-popup-blocking')
-    options.add_argument("--headless=new")
+    #options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
 
