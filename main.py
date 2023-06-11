@@ -276,7 +276,7 @@ def main():
     options = uc.ChromeOptions()
     options.binary_location = os.getenv("BROWSER")
     options.add_argument('--disable-popup-blocking')
-    #options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
 
