@@ -40,6 +40,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
         logging.warning(f"Couldn't get name of card {card}")
         return True
     
+    print(cardLink)
     cardName = cardLink.split('/')[-1]
 
     # Check if cardName has "isFoil=Y". If so, something went wrong
