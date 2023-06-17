@@ -255,7 +255,7 @@ def main():
 
     # Set up logging
     now = datetime.now()
-    filename = now.strftime("%Y%m%d_%H%M%S")
+    filename = now.strftime("/home/galego/Automarket/%Y%m%d_%H%M%S")
     logging.basicConfig(filename = filename, encoding = "utf-8", level = logging.INFO)
 
     # Check if a command line argument was given (price to start from)
