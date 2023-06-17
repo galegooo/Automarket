@@ -33,29 +33,27 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     except:
         isFoil = False
 
-    # Get card page link and open in a new tab
-    try:
-        cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
-    except:
-        logging.warning(f"Couldn't get name of card {card}")
-        return True
-    
-    cardName = cardLink.split('/')[-1]
+    counter = 0
+    while True:
+        # Get card page link and open in a new tab
+        try:
+            cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
+        except:
+            logging.warning(f"Couldn't get name of card {card}")
+            return True
+        
+        cardName = cardLink.split('/')[-1]
 
-    # Check if cardName has "isFoil=Y". If so, something went wrong
-    # if("isFoil=Y" in cardName):
-    #     try:    # Some cards only have a foil version
-    #         driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-    #         time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-    #         while True:
-    #             if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-    #                 logging.warning(f"Timeout on toggling foil on card {cardName}")
-    #                 driver.refresh()
-    #                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-    #                 continue
-    #             break
-    #     except:
-    #         pass
+        # Check if cardName has "isFoil=Y". If so, something went wrong
+        if("isFoil=Y" in cardName):
+            counter += 1
+            if(counter == 10):
+                return True
+            driver.refresh()
+            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+        else:
+            break
+
     logging.info(f"Checking {cardName}")    
     
     time.sleep(random.uniform(0.5, 3))   # Avoid rate limiting
