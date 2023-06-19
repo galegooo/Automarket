@@ -314,6 +314,7 @@ def main():
         table += "/div[2]/div"
         cards = driver.find_elements(By.XPATH, table)
         cardsMoved = 0
+        print("found", len(cards), "elements")
         for card in cards:
             if HandleCard(driver, card, priceFloor, priceCeil):
                 reset = True
