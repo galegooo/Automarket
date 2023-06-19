@@ -255,6 +255,8 @@ def main():
     now = datetime.now()
     filename = now.strftime("/home/galego/Automarket/%Y%m%d_%H%M%S")
     logging.basicConfig(filename = filename, encoding = "utf-8", level = logging.INFO)
+    startingTime = now.strftime("%Y/%m/%d %H:%M:%S")
+    logging.info(f"Starting review at {startingTime}")
 
     # Check if a command line argument was given (price to start from)
     priceToStart = 1
@@ -366,7 +368,9 @@ def main():
             if(priceFloor == False):
                 break
             
-    logging.info(f"Finished reviewing - Net change is {round(netChange, 2)}")
+    now = datetime.now()
+    finishingTime = now.strftime("%Y/%m/%d %H:%M:%S")
+    logging.info(f"Finished review at {finishingTime} - Net change is {round(netChange, 2)}")
     driver.quit()
     quit()
 
