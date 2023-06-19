@@ -39,8 +39,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
         try:
             cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
         except:
-            logging.warning(f"Couldn't get name of card {card}")
-            return True
+            logging.warning(f"Couldn't get name of card {card}")    # Sometimes this happens. Right now ignoring card
+            return False
         
         cardName = cardLink.split('/')[-1]
 
