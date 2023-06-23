@@ -16,15 +16,19 @@ from dotenv import load_dotenv
 
 
 def WaitForPage(element, driver):
+    global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
+
     try:
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
+        timeoutCounter += 1
         return True
     
+    timeoutCounter = 0
     return False
 
 def HandleCard(driver, card, priceFloor, priceCeil):
-    global netChange, stageChange, cardsMoved
+    global netChange, stageChange, cardsMoved, timeoutCounter
 
     # Check if card is foil
     try:
@@ -64,6 +68,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     while True:
         if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
             logging.warning(f"Timeout on opening tab for card {cardName}")
+            if (timeoutCounter == 10):
+                return True
             driver.refresh()
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             continue
@@ -77,6 +83,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             while True:
                 if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
                     logging.warning(f"Timeout on changing card {cardName} to foil")
+                    if (timeoutCounter == 10):
+                        return True
                     driver.refresh()
                     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
@@ -119,6 +127,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
             if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
                 logging.warning(f"Timeout on changing card {cardName} price")
+                if (timeoutCounter == 10):
+                    return True
                 driver.refresh()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
@@ -131,6 +141,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             # Wait for confirmation
             if WaitForPage("/html/body/main/div[1]/div", driver):
                 logging.warning(f"Timeout on price change confirmation for card {cardName}")
+                if (timeoutCounter == 10):
+                    return True
                 driver.refresh()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
@@ -153,6 +165,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             while True:
                 if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
                     logging.warning(f"Timeout on reverting foil on card {cardName}")
+                    if (timeoutCounter == 10):
+                        return True
                     driver.refresh()
                     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
@@ -248,6 +262,9 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
     return priceFloor, priceCeil
 
 def main():
+    global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
+    timeoutCounter = 0
+    
     # Handle Ctrl+C from user
     signal.signal(signal.SIGINT, handler)
 
