@@ -22,6 +22,7 @@ def WaitForPage(element, driver):
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
         timeoutCounter += 1
+        print("timeoutCounter is at", timeoutCounter)
         return True
     
     timeoutCounter = 0
@@ -262,7 +263,7 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
     return priceFloor, priceCeil
 
 def main():
-    global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
+    global timeoutCounter   # If this reaches 10, exit program
     timeoutCounter = 0
     
     # Handle Ctrl+C from user
