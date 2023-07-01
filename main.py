@@ -22,7 +22,6 @@ def WaitForPage(element, driver):
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
         timeoutCounter += 1
-        print("timeoutCounter is at", timeoutCounter)
         return True
     
     timeoutCounter = 0
