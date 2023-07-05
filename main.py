@@ -3,6 +3,8 @@ import time
 import sys
 import random
 import signal
+import logging
+from datetime import datetime, timezone
 
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -14,15 +16,19 @@ from dotenv import load_dotenv
 
 
 def WaitForPage(element, driver):
+    global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
+
     try:
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
+        timeoutCounter += 1
         return True
     
+    timeoutCounter = 0
     return False
 
 def HandleCard(driver, card, priceFloor, priceCeil):
-    global netChange, stageChange, cardsMoved
+    global netChange, stageChange, cardsMoved, timeoutCounter
 
     # Check if card is foil
     try:
@@ -31,15 +37,31 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     except:
         isFoil = False
 
-    # Get card page link and open in a new tab
-    try:
-        cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
-    except:
-        print("Couldn't get name of card ", card)
-        return True
-    
-    cardName = cardLink.split('/')[-1]
-    print(f"Checking {cardName}", end = "")    
+    counter = 0
+    while True:
+        # Get card page link and open in a new tab
+        try:
+            cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
+        except:
+            logging.warning(f"Couldn't get name of card {card}")    #! Sometimes this happens, dunno why
+            timeoutCounter += 1
+            if(timeoutCounter == 10):
+                return True
+            return False
+        
+        cardName = cardLink.split('/')[-1]
+
+        # Check if cardName has "isFoil=Y". If so, something went wrong
+        if("isFoil=Y" in cardName):
+            counter += 1
+            if(counter == 10):
+                return True
+            driver.refresh()
+            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+        else:
+            break
+
+    logging.info(f"Checking {cardName}")    
     
     time.sleep(random.uniform(0.5, 3))   # Avoid rate limiting
     driver.execute_script("window.open('');")
@@ -48,7 +70,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
     while True:
         if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-            print(" - Timeout on opening tab for card", cardName, end = "")
+            logging.warning(f"Timeout on opening tab for card {cardName}")
+            if (timeoutCounter == 10):
+                return True
             driver.refresh()
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             continue
@@ -61,7 +85,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             while True:
                 if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-                    print(" - Timeout on changing card", cardName, "to foil", end = "")
+                    logging.warning(f"Timeout on changing card {cardName} to foil")
+                    if (timeoutCounter == 10):
+                        return True
                     driver.refresh()
                     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
@@ -103,7 +129,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 break    # No more cards
 
             if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
-                print(" - Timeout on changing card", cardName, "price", end = "")
+                logging.warning(f"Timeout on changing card {cardName} price")
+                if (timeoutCounter == 10):
+                    return True
                 driver.refresh()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
@@ -115,7 +143,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             
             # Wait for confirmation
             if WaitForPage("/html/body/main/div[1]/div", driver):
-                print(" - Timeout on price change confirmation for card", cardName, end = "")
+                logging.warning(f"Timeout on price change confirmation for card {cardName}")
+                if (timeoutCounter == 10):
+                    return True
                 driver.refresh()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
@@ -124,13 +154,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             if(newSellPrice > priceCeil or newSellPrice < priceFloor):
                 cardsMoved += 1
 
-        print(f" -> changed from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
+        logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
 
         # Update net and stage change
         netChange = netChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
         stageChange = stageChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
-    else:
-        print("")
 
     # If it was foil, revert to normal mode
     if isFoil:
@@ -139,7 +167,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             while True:
                 if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-                    print(" - Timeout on reverting foil on card", cardName, end = "")
+                    logging.warning(f"Timeout on reverting foil on card {cardName}")
+                    if (timeoutCounter == 10):
+                        return True
                     driver.refresh()
                     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
@@ -172,7 +202,7 @@ def LogIn(driver):
     
     # Wait until page is loaded
     WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
-    print("Logged in")
+    logging.info("Logged in")
 
     # Open active listings
     listingsLink = os.getenv("URL") + "/Stock/Offers/Singles"
@@ -186,9 +216,9 @@ def setPriceRange(driver, price, priceCeil):
     driver.get(link)
 
     if(price != priceCeil):
-        print(f"\nChecking from {price} to {priceCeil}")
+        logging.info(f"\nChecking from {price} to {priceCeil}")
     else:
-        print(f"\nChecking {price}")
+        logging.info(f"\nChecking {price}")
 
     WaitForPage("/html/body/main/div[6]/div[2]", driver)
     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
@@ -196,7 +226,7 @@ def setPriceRange(driver, price, priceCeil):
 def changePriceRange(priceFloor, driver, priceCeil):
     global stageChange, netChange
 
-    print(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
+    logging.info(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
     stageChange = 0
 
     priceCeil = round(priceFloor - 0.01, 2)
@@ -212,7 +242,7 @@ def changePriceRange(priceFloor, driver, priceCeil):
     return priceFloor, priceCeil
 
 def handler(signum, frame):
-    print(f"User terminated program - Net change is {round(netChange, 2)}")
+    logging.warning(f"User terminated program - Net change is {round(netChange, 2)}")
     quit()
      
 def checkForMaxRange(driver, priceFloor, priceCeil):
@@ -220,7 +250,7 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
         # Check if price range has more than 300 cards
         try:
             driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
-            print("Range has 300+ cards")
+            logging.warning("Range has 300+ cards")
             # If program reaches here, too many cards. Try to change price range
             if(priceFloor != priceCeil):
                 priceFloor = round(priceFloor + 0.01, 2)
@@ -228,14 +258,25 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
             else:
                 break
         except:
-            print("Range has", driver.find_element(By.XPATH, "/html/body/main/div[5]/div[1]/span/span[1]").text, "cards")
+            range = driver.find_element(By.XPATH, "/html/body/main/div[5]/div[1]/span/span[1]").text
+            logging.info(f"\tRange has {range} cards")
             break
 
     return priceFloor, priceCeil
 
 def main():
+    global timeoutCounter   # If this reaches 10, exit program
+    timeoutCounter = 0
+    
     # Handle Ctrl+C from user
     signal.signal(signal.SIGINT, handler)
+
+    # Set up logging
+    now = datetime.now()
+    filename = now.strftime("/home/galego/Automarket/%Y%m%d_%H%M%S")
+    logging.basicConfig(filename = filename, encoding = "utf-8", level = logging.INFO)
+    startingTime = now.strftime("%Y/%m/%d %H:%M:%S")
+    logging.info(f"Starting review at {startingTime}")
 
     # Check if a command line argument was given (price to start from)
     priceToStart = 1
@@ -249,14 +290,15 @@ def main():
     global username, password
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
-
+    chromedriver = os.getenv("CHROMEDRIVER")
+    
     # Setup browser options
     options = uc.ChromeOptions()
     options.binary_location = os.getenv("BROWSER")
     options.add_argument('--disable-popup-blocking')
     #options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
-    driver = uc.Chrome(use_subprocess=True, options=options)
+    driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
 
     # Show overall change in the end
     global netChange, stageChange
@@ -346,7 +388,9 @@ def main():
             if(priceFloor == False):
                 break
             
-    print(f"Finished reviewing - Net change is {round(netChange, 2)}")
+    now = datetime.now()
+    finishingTime = now.strftime("%Y/%m/%d %H:%M:%S")
+    logging.info(f"Finished review at {finishingTime} - Net change is {round(netChange, 2)}")
     driver.quit()
     quit()
 
