@@ -186,7 +186,9 @@ def LogIn(driver):
     global username, password
 
     # Open the webpage and wait for it to load
+    print("getting page")
     driver.get(os.getenv("URL"))
+    print("got page")
     WaitForPage("/html/body/header/div[1]/div/div/form/button", driver)
 
     # Accept cookies (this takes care of future problems)
@@ -196,6 +198,7 @@ def LogIn(driver):
         pass
 
     # Log in
+    print("sending credentials")
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[1]/div/input").send_keys(username)
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[2]/div/input").send_keys(password)
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/input[3]").click()
@@ -286,19 +289,22 @@ def main():
         priceToStart = float(input("From which price would you like to start? "))
 
     # Get environment variables
+    print("loading .env")
     load_dotenv()
     global username, password
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
     chromedriver = os.getenv("CHROMEDRIVER")
+    print("loaded .env")
     
     # Setup browser options
     options = uc.ChromeOptions()
     options.binary_location = os.getenv("BROWSER")
     options.add_argument('--disable-popup-blocking')
-    #options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
+    print("set options")
 
     # Show overall change in the end
     global netChange, stageChange
