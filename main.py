@@ -391,6 +391,7 @@ def main():
             skipButton = "/html/body/main/div[6]/div[2]/div/a[2]"
 
         try:
+            logging.info("next page")
             driver.find_element(By.XPATH, skipButton).click()
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             WaitForPage(table, driver)
