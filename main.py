@@ -122,6 +122,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     if(sellPrice != newSellPrice):  # Values are different, change current sell price
         # There can be more than 1 card listed
         numberOfCard = 1
+        localTimeoutCounter = 0
         while True:
             try:
                 driver.find_element(By.XPATH, f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
@@ -144,7 +145,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             # Wait for confirmation
             if WaitForPage("/html/body/main/div[1]/div", driver):
                 logging.warning(f"Timeout on price change confirmation for card {cardName}")
-                if (timeoutCounter == 10):
+                localTimeoutCounter += 1
+                if(localTimeoutCounter == 10):
                     return True
                 driver.refresh()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
