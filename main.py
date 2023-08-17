@@ -32,7 +32,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
     # Check if card is foil
     try:
-        card.find_element(By.XPATH, ".//div[3]/div/div[2]/div/div[1]/span[3]")
+        card.find_element(By.XPATH, ".//div[3]/div/div[2]/div/div[1]/div/span[3]")
         isFoil = True
     except:
         isFoil = False
@@ -41,7 +41,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     while True:
         # Get card page link and open in a new tab
         try:
-            cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
+            cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/div/a").get_attribute("href")
         except:
             logging.warning(f"Couldn't get name of card {card}")    #! Sometimes this happens, dunno why
             timeoutCounter += 1
