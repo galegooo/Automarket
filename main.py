@@ -191,6 +191,7 @@ def LogIn(driver):
     driver.get(os.getenv("URL"))
     WaitForPage("/html/body/header/div[1]/div/div/form/button", driver)
 
+    logging.info("page is opened")
     # Accept cookies (this takes care of future problems)
     try:
         driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/button").click()
@@ -218,9 +219,9 @@ def setPriceRange(driver, price, priceCeil):
     driver.get(link)
 
     if(price != priceCeil):
-        logging.info(f"\nChecking from {price} to {priceCeil}")
+        logging.info(f"\tChecking from {price} to {priceCeil}")
     else:
-        logging.info(f"\nChecking {price}")
+        logging.info(f"\tChecking {price}")
 
     WaitForPage("/html/body/main/div[6]/div[2]", driver)
     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
@@ -288,6 +289,7 @@ def main():
         priceToStart = float(input("From which price would you like to start? "))
 
     # Get environment variables
+    logging.info("loading env vars")
     load_dotenv()
     global username, password
     username = os.getenv("LOGINUSER")
@@ -315,6 +317,7 @@ def main():
     # To make sure every card is seen
     global cardsMoved
 
+    logging.info("going to log in")
     LogIn(driver)
 
     priceFloor = priceToStart
@@ -387,7 +390,6 @@ def main():
             skipButton = "/html/body/main/div[6]/div[2]/div/a[2]"
 
         try:
-            logging.info("next page")
             driver.find_element(By.XPATH, skipButton).click()
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             WaitForPage(table, driver)
