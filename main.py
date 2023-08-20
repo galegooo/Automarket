@@ -291,6 +291,7 @@ def main():
     # Get environment variables
     logging.info("loading env vars")
     load_dotenv()
+    logging.info("loaded env vars")
     global username, password
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
@@ -300,10 +301,12 @@ def main():
     try:
         options = uc.ChromeOptions()
         options.binary_location = os.getenv("BROWSER")
+        logging.info("setting browser options")
         options.add_argument('--disable-popup-blocking')
         options.add_argument("--headless=new")
         options.add_argument("--window-size=1920,1080")
         driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
+        logging.info("set")
     except Exception as e:
         print(e)
         exit(1)
