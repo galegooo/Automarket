@@ -289,9 +289,7 @@ def main():
         priceToStart = float(input("From which price would you like to start? "))
 
     # Get environment variables
-    logging.info("loading env vars")
     load_dotenv()
-    logging.info("loaded env vars")
     global username, password
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
@@ -305,7 +303,7 @@ def main():
         options.add_argument('--disable-popup-blocking')
         options.add_argument("--headless=new")
         options.add_argument("--window-size=1920,1080")
-        driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
+        driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=False, options=options)
         logging.info("set")
     except Exception as e:
         print(e)
