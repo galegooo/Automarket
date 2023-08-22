@@ -219,9 +219,9 @@ def setPriceRange(driver, price, priceCeil):
     driver.get(link)
 
     if(price != priceCeil):
-        logging.info(f"\tChecking from {price} to {priceCeil}")
+        logging.info(f"---->Checking from {price} to {priceCeil}")
     else:
-        logging.info(f"\tChecking {price}")
+        logging.info(f"---->Checking {price}")
 
     WaitForPage("/html/body/main/div[6]/div[2]", driver)
     time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
@@ -229,7 +229,7 @@ def setPriceRange(driver, price, priceCeil):
 def changePriceRange(priceFloor, driver, priceCeil):
     global stageChange, netChange
 
-    logging.info(f"Finished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
+    logging.info(f"\tFinished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
     stageChange = 0
 
     priceCeil = round(priceFloor - 0.01, 2)
@@ -303,10 +303,10 @@ def main():
         options.add_argument('--disable-popup-blocking')
         options.add_argument("--headless=new")
         options.add_argument("--window-size=1920,1080")
-        driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=False, options=options)
+        driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
         logging.info("set")
     except Exception as e:
-        print(e)
+        logging.info(e)
         exit(1)
 
 
