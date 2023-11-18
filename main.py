@@ -4,7 +4,7 @@ import sys
 import random
 import signal
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -41,7 +41,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     while True:
         # Get card page link and open in a new tab
         try:
-            cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/div/a").get_attribute("href")
+            cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
         except:
             logging.warning(f"Couldn't get name of card {card}")    #! Sometimes this happens, dunno why
             timeoutCounter += 1
@@ -105,11 +105,22 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
     # Get current price trend and price minimum (removing " $" and replacing ',' by '.')
     if isThereFoilVersion:
-        priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+        # Not guaranteed to have a price trend (cards that never sell)
+        try:
+            priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
-        priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
+            priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
+        except:
+            # Only use "from" price
+            priceTrend = 0
+
+            priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
     else:
-        priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+        try:
+            priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+        except:
+            # Only use "from" price
+            priceTrend = 0
 
         priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
@@ -118,7 +129,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
 
     # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same
-    newSellPrice = round(abs(0.95 * (priceTrend - priceFrom)) + priceFrom, 2)
+    if(priceTrend != 0):
+        newSellPrice = round(abs(0.95 * (priceTrend - priceFrom)) + priceFrom, 2)
+    else:
+        newSellPrice = round(priceFrom, 2)
+        
     if(sellPrice != newSellPrice):  # Values are different, change current sell price
         # There can be more than 1 card listed
         numberOfCard = 1
@@ -137,10 +152,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
 
-            priceField = driver.find_element(By.XPATH, "/html/body/div[3]/div/div/div[2]/div/form/div[5]/div/input")
+            fields = driver.find_elements(By.XPATH, "/html/body/div[3]/div/div/div[2]/div/form/div")
+            priceField = fields[-2].find_element(By.XPATH, ".//div/input")
             priceField.clear()
             priceField.send_keys(str(newSellPrice))
-            driver.find_element(By.XPATH, "/html/body/div[3]/div/div/div[2]/div/form/div[6]/button").click()
+            fields[-1].find_element(By.XPATH, ".//button").click()
             
             # Wait for confirmation
             if WaitForPage("/html/body/main/div[1]/div", driver):
@@ -274,9 +290,12 @@ def main():
     # Handle Ctrl+C from user
     signal.signal(signal.SIGINT, handler)
 
+    # Load environment variables
+    load_dotenv()
+    
     # Set up logging
     now = datetime.now()
-    logDir = os.getenv("LOGDIR")
+    logDir = str(os.getenv("LOGDIR"))
     filename = now.strftime(logDir + "%Y%m%d_%H%M%S")
     logging.basicConfig(filename = filename, encoding = "utf-8", level = logging.INFO)
     startingTime = now.strftime("%Y/%m/%d %H:%M:%S")
@@ -289,8 +308,6 @@ def main():
     else:
         priceToStart = float(input("From which price would you like to start? "))
 
-    # Get environment variables
-    load_dotenv()
     global username, password
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
@@ -301,7 +318,7 @@ def main():
         options.binary_location = os.getenv("BROWSER")
         logging.info("setting browser options")
         options.add_argument('--disable-popup-blocking')
-        options.add_argument("--headless=new")
+        #options.add_argument("--headless=True")
         options.add_argument("--window-size=1920,1080")
         driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
         logging.info("set")
