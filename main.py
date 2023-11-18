@@ -276,7 +276,8 @@ def main():
 
     # Set up logging
     now = datetime.now()
-    filename = now.strftime("/home/galego/Automarket/%Y%m%d_%H%M%S")
+    logDir = os.getenv("LOGDIR")
+    filename = now.strftime(logDir + "%Y%m%d_%H%M%S")
     logging.basicConfig(filename = filename, encoding = "utf-8", level = logging.INFO)
     startingTime = now.strftime("%Y/%m/%d %H:%M:%S")
     logging.info(f"Starting review at {startingTime}")
@@ -294,7 +295,6 @@ def main():
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
     chromedriver = os.getenv("CHROMEDRIVER")
-    
     # Setup browser options
     try:
         options = uc.ChromeOptions()
@@ -306,9 +306,9 @@ def main():
         driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
         logging.info("set")
     except Exception as e:
+        print("got an error ->", e)
         logging.info(e)
         exit(1)
-
 
     # Show overall change in the end
     global netChange, stageChange
