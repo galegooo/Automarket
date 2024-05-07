@@ -208,8 +208,7 @@ def LogIn(driver):
     driver.get(os.getenv("URL"))
     WaitForPage("/html/body/header/div[1]/div/div/form/button", driver)
 
-    logging.info("page is opened")
-    driver.save_screenshot("screenshot.png")
+    #logging.info("page is opened")
     # Accept cookies (this takes care of future problems)
     try:
         driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/button").click()
@@ -223,7 +222,7 @@ def LogIn(driver):
     
     # Wait until page is loaded
     WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
-    logging.info("Logged in")
+    #logging.info("Logged in")
 
     # Open active listings
     listingsLink = os.getenv("URL") + "/Stock/Offers/Singles"
@@ -279,7 +278,7 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
             else:
                 break
         except:
-            range = driver.find_element(By.XPATH, "/html/body/main/div[5]/div[1]/span/span[1]").text
+            range = driver.find_element(By.XPATH, "/html/body/main/div[4]/div[1]/span/span[1]").text
             logging.info(f"\tRange has {range} cards")
             break
 
@@ -318,13 +317,13 @@ def main():
     try:
         options = uc.ChromeOptions()
         options.binary_location = os.getenv("BROWSER")
-        logging.info("setting browser options")
+        #logging.info("setting browser options")
         options.add_argument('--disable-popup-blocking')
         options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
-        stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)
-        logging.info("set")
+        stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
+        #logging.info("set")
     except Exception as e:
         print("got an error ->", e)
         logging.info(e)
@@ -338,7 +337,7 @@ def main():
     # To make sure every card is seen
     global cardsMoved
 
-    logging.info("going to log in")
+    #logging.info("going to log in")
     LogIn(driver)
 
     priceFloor = priceToStart
