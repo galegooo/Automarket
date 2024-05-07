@@ -208,11 +208,11 @@ def LogIn(driver):
     WaitForPage("/html/body/header/div[1]/div/div/form/button", driver)
 
     logging.info("page is opened")
+    driver.save_screenshot("screenshot.png")
     # Accept cookies (this takes care of future problems)
     try:
         driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/button").click()
     except:
-        logging.info("Failed to accept cookies")
         pass
 
     # Log in
