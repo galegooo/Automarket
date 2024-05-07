@@ -67,11 +67,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     time.sleep(random.uniform(0.5, 3))   # Avoid rate limiting
     driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[1])
-    logging.info(f"opening tab {cardLink}")
     driver.get(cardLink)
 
     while True:
         if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
+            driver.save_screenshot("screen.png")
             logging.warning(f"Timeout on opening tab for card {cardName}")
             if (timeoutCounter == 10):
                 return True
