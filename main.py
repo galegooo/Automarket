@@ -44,7 +44,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
         try:
             cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
         except:
-            logging.warning(f"Couldn't get name of card {card}")    #! Sometimes this happens, dunno why
+            logging.warning(f"Couldn't get name of card {card}")
             timeoutCounter += 1
             if(timeoutCounter == 10):
                 return True
@@ -67,10 +67,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     time.sleep(random.uniform(0.5, 3))   # Avoid rate limiting
     driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[1])
+    logging.info(f"opening tab {cardLink}")
     driver.get(cardLink)
 
     while True:
-        if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+        if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
             logging.warning(f"Timeout on opening tab for card {cardName}")
             if (timeoutCounter == 10):
                 return True
