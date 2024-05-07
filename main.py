@@ -356,10 +356,10 @@ def main():
         tooManyCards = False
         try:
             driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
-            table = "/html/body/main/div[7]"
+            table = "/html/body/main/div[6]"
             tooManyCards = True
         except:
-            table = "/html/body/main/div[6]"
+            table = "/html/body/main/div[5]"
 
         table += "/div[2]/div"
         cards = driver.find_elements(By.XPATH, table)
