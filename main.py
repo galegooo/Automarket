@@ -212,6 +212,7 @@ def LogIn(driver):
     try:
         driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/button").click()
     except:
+        logging.info("Failed to accept cookies")
         pass
 
     # Log in
@@ -318,7 +319,7 @@ def main():
         options.binary_location = os.getenv("BROWSER")
         logging.info("setting browser options")
         options.add_argument('--disable-popup-blocking')
-        #options.add_argument("--headless=True")
+        options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
         logging.info("set")
