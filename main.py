@@ -11,6 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium import webdriver
 
 from dotenv import load_dotenv
 
@@ -315,7 +316,7 @@ def main():
     chromedriver = os.getenv("CHROMEDRIVER")
     # Setup browser options
     try:
-        options = uc.ChromeOptions()
+        options = webdriver.ChromeOptions()
         options.binary_location = os.getenv("BROWSER")
         logging.info("setting browser options")
         options.add_argument('--disable-popup-blocking')
