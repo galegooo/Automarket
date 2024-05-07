@@ -11,7 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from selenium import webdriver
+from selenium_stealth import stealth
 
 from dotenv import load_dotenv
 
@@ -316,13 +316,14 @@ def main():
     chromedriver = os.getenv("CHROMEDRIVER")
     # Setup browser options
     try:
-        options = webdriver.ChromeOptions()
+        options = uc.ChromeOptions()
         options.binary_location = os.getenv("BROWSER")
         logging.info("setting browser options")
         options.add_argument('--disable-popup-blocking')
         options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
+        stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)
         logging.info("set")
     except Exception as e:
         print("got an error ->", e)
