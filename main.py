@@ -197,8 +197,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
                 logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
                 # Update net and stage change
-                netChange = netChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
-                stageChange = stageChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
+                netChange = netChange + (newSellPrice - sellPrice)
+                stageChange = stageChange + (newSellPrice - sellPrice)
 
                 if(newSellPrice > priceCeil or newSellPrice < priceFloor):
                     cardsMoved += 1
@@ -407,7 +407,6 @@ def main():
             if HandleCard(driver, card, priceFloor, priceCeil):
                 reset = True
                 break
-            logging.info(f"netchange is {netChange}\tstage change is {stageChange}")
 
         if reset:
             break
