@@ -266,8 +266,14 @@ def setPriceRange(driver, price, priceCeil):
     else:
         logging.info(f"---->Checking {price}")
 
-    WaitForPage("/html/body/main/div[6]/div[2]", driver)
-    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+    while True:
+        if WaitForPage("/html/body/main/div[6]/div[2]", driver):
+            logging.warning("Timeout on changing price range")
+            if (timeoutCounter == 10):
+                return True
+            driver.refresh()
+            continue
+        break
 
 def changePriceRange(priceFloor, driver, priceCeil):
     global stageChange, netChange
