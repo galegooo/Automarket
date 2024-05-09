@@ -80,24 +80,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             continue
         break
 
-    # If card is foil, check the box first
-    if isFoil:
-        try:    # Some cards only have a foil version
-            driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-            while True:
-                if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
-                    logging.warning(f"Timeout on changing card {cardName} to foil")
-                    if (timeoutCounter == 10):
-                        return True
-                    driver.refresh()
-                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-                    continue
-                break
-        except:
-            pass
-
-    #* Get current price trend. This differs with whether there is a foil version or not
     # Check for existence of foil version
     isThereFoilVersion = True
     try:
@@ -105,26 +87,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     except:
         isThereFoilVersion = False
 
-    #* Get current price trend and price minimum (removing " $" and replacing ',' by '.')
-    if isThereFoilVersion:
-        # Not guaranteed to have a price trend (cards that never sell)
-        try:
-            priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
-            priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
-        except:
-            # Only use "from" price
-            priceTrend = 0
-
-            priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
-    else:
-        try:
-            priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
-        except:
-            # Only use "from" price
-            priceTrend = 0
-
-        priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
+    
 
 
     #* there can be multiple cards for sale, each with their own prices. go through all
@@ -137,8 +101,54 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
                 # Get quality of card
                 quality = driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/a/span").get_attribute("innerHTML")
+
+                # check if card is foil
+                try:
+                    driver.find_element(By.XPATH, "/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/span[2]")
+                    isFoil = True
+                except:
+                    isFoil = False
             except:
                 break    # No more cards
+
+            
+            # If card is foil, check the box first
+            if isFoil:
+                try:    # Some cards only have a foil version
+                    driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    while True:
+                        if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
+                            logging.warning(f"Timeout on changing card {cardName} to foil")
+                            if (timeoutCounter == 10):
+                                return True
+                            driver.refresh()
+                            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                            continue
+                        break
+                except:
+                    pass
+
+            #* Get current price trend and price minimum (removing " $" and replacing ',' by '.')
+            if isThereFoilVersion:
+                # Not guaranteed to have a price trend (cards that never sell)
+                try:
+                    priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+
+                    priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
+                except:
+                    # Only use "from" price
+                    priceTrend = 0
+
+                    priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+            else:
+                try:
+                    priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+                except:
+                    # Only use "from" price
+                    priceTrend = 0
+
+                priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
             # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same. if there is no trend, set at the From
             if(priceTrend != 0):
