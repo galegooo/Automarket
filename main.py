@@ -72,7 +72,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
     while True:
         if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
-            driver.save_screenshot("screen.png")
             logging.warning(f"Timeout on opening tab for card {cardName}")
             if (timeoutCounter == 10):
                 return True
@@ -125,6 +124,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             # Only use "from" price
             priceTrend = 0
 
+        driver.save_screenshot("screen.png")
         priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
     # Get current sell price
