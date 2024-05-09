@@ -33,6 +33,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     global netChange, stageChange, cardsMoved, timeoutCounter
 
     # Check if card is foil
+    # card = /html/body/main/div[6/5(depends on if page is at max card count)]/div[2]/div[*]
     try:
         card.find_element(By.XPATH, ".//div[3]/div/div[2]/div/div[1]/div/span[3]")
         isFoil = True
@@ -83,10 +84,10 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     # If card is foil, check the box first
     if isFoil:
         try:    # Some cards only have a foil version
-            driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+            driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             while True:
-                if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+                if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
                     logging.warning(f"Timeout on changing card {cardName} to foil")
                     if (timeoutCounter == 10):
                         return True
@@ -101,7 +102,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     # Check for existence of foil version
     isThereFoilVersion = True
     try:
-        driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label")
+        driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label")
     except:
         isThereFoilVersion = False
 
@@ -109,26 +110,25 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     if isThereFoilVersion:
         # Not guaranteed to have a price trend (cards that never sell)
         try:
-            priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+            priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
-            priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
+            priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
         except:
             # Only use "from" price
             priceTrend = 0
 
-            priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+            priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[2]/div/div[2]/dl/dd")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
     else:
         try:
-            priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
+            priceTrend = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd/span")[-4].get_attribute("innerHTML")[:-2].replace(',', '.'))
         except:
             # Only use "from" price
             priceTrend = 0
 
-        driver.save_screenshot("screen.png")
-        priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
+        priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
     # Get current sell price
-    sellPrice = float(driver.find_element(By.XPATH, "/html/body/main/div[4]/section[5]/div/div[2]/div[1]/div[3]/div[1]/div/div/span").get_attribute("innerHTML")[:-2].replace(',', '.'))
+    sellPrice = float(driver.find_element(By.XPATH, "/html/body/main/div[3]/section[5]/div/div[2]/div[1]/div[3]/div[1]/div/div/span").get_attribute("innerHTML")[:-2].replace(',', '.'))
 
 
     # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same
@@ -143,7 +143,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
         localTimeoutCounter = 0
         while True:
             try:
-                driver.find_element(By.XPATH, f"/html/body/main/div[4]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
+                driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
             except:
                 break    # No more cards
 
@@ -184,7 +184,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     # If it was foil, revert to normal mode
     if isFoil:
         try:    # Some cards only have a foil version
-            driver.find_element(By.XPATH, "/html/body/main/div[4]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+            driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
             time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             while True:
                 if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
@@ -280,7 +280,7 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
             else:
                 break
         except:
-            range = driver.find_element(By.XPATH, "/html/body/main/div[4]/div[1]/span/span[1]").text
+            range = driver.find_element(By.XPATH, "/html/body/main/div[3]/div[1]/span/span[1]").text
             logging.info(f"\tRange has {range} cards")
             break
 
