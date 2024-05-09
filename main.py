@@ -338,7 +338,8 @@ def main():
         options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images
-        driver = webdriver.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
+        #driver_executable_path=chromedriver, use_subprocess=True, 
+        driver = webdriver.Chrome(options=options)
         stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
         #logging.info("set")
     except Exception as e:
