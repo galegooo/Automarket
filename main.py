@@ -72,8 +72,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
     while True:
         if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
-            logging.warning(f"Timeout on opening tab for card {cardName}")
             if (timeoutCounter == 10):
+                logging.warning(f"Timeout while opening tab for card {cardName}")
                 return True
             driver.refresh()
             #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
@@ -115,8 +115,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                     #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     while True:
                         if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
-                            logging.warning(f"Timeout on changing card {cardName} to foil")
                             if (timeoutCounter == 10):
+                                logging.warning(f"Timeout on changing card {cardName} to foil")
                                 return True
                             driver.refresh()
                             #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
@@ -172,8 +172,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
 
                 if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
-                    logging.warning(f"Timeout on changing card {cardName} price")
                     if (timeoutCounter == 10):
+                        logging.warning(f"Timeout on changing card {cardName} price")
                         return True
                     driver.refresh()
                     #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
@@ -187,9 +187,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 
                 # Wait for confirmation
                 if WaitForPage("/html/body/main/div[1]/div", driver):
-                    logging.warning(f"Timeout on price change confirmation for card {cardName}")
                     localTimeoutCounter += 1
                     if(localTimeoutCounter == 10):
+                        logging.warning(f"Timeout on price change confirmation for card {cardName}")
                         return True
                     driver.refresh()
                     #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
@@ -210,8 +210,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                     #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     while True:
                         if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-                            logging.warning(f"Timeout on reverting foil on card {cardName}")
                             if (timeoutCounter == 10):
+                                logging.warning(f"Timeout on reverting foil on card {cardName}")
                                 return True
                             driver.refresh()
                             #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
@@ -268,8 +268,8 @@ def setPriceRange(driver, price, priceCeil):
 
     while True:
         if WaitForPage("/html/body/main/div[6]/div[2]", driver):
-            logging.warning("Timeout on changing price range")
             if (timeoutCounter == 10):
+                logging.warning("Timeout on changing price range")
                 return True
             driver.refresh()
             continue
@@ -409,7 +409,7 @@ def main():
         table += "/div[2]/div"
         cards = driver.find_elements(By.XPATH, table)
         cardsMoved = 0
-        for card in cards:
+        for card in cards[:-1]: # ignoring last one because it's not a card
             if HandleCard(driver, card, priceFloor, priceCeil):
                 reset = True
                 break
