@@ -97,7 +97,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
         except:
             pass
 
-    # Get current price trend. This differs with whether there is a foil version or not
+    #* Get current price trend. This differs with whether there is a foil version or not
     # Check for existence of foil version
     isThereFoilVersion = True
     try:
@@ -105,7 +105,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     except:
         isThereFoilVersion = False
 
-    # Get current price trend and price minimum (removing " $" and replacing ',' by '.')
+    #* Get current price trend and price minimum (removing " $" and replacing ',' by '.')
     if isThereFoilVersion:
         # Not guaranteed to have a price trend (cards that never sell)
         try:
@@ -126,59 +126,78 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
         priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
-    # Get current sell price
-    sellPrice = float(driver.find_element(By.XPATH, "/html/body/main/div[3]/section[5]/div/div[2]/div[1]/div[3]/div[1]/div/div/span").get_attribute("innerHTML")[:-2].replace(',', '.'))
 
+    #* there can be multiple cards for sale, each with their own prices. go through all
+    numberOfCard = 1
+    localTimeoutCounter = 0
+    while True:
+            try:    # check if there is another card
+                # Get current sell price
+                sellPrice = float(driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[1]/div/div/span").get_attribute("innerHTML")[:-2].replace(',', '.'))
 
-    # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same
-    if(priceTrend != 0):
-        newSellPrice = round(abs(0.95 * (priceTrend - priceFrom)) + priceFrom, 2)
-    else:
-        newSellPrice = round(priceFrom, 2)
-        
-    if(sellPrice != newSellPrice):  # Values are different, change current sell price
-        # There can be more than 1 card listed
-        numberOfCard = 1
-        localTimeoutCounter = 0
-        while True:
-            try:
-                driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
+                # Get quality of card
+                quality = driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/a/badge").get_attribute("innerHTML")
             except:
                 break    # No more cards
 
-            if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
-                logging.warning(f"Timeout on changing card {cardName} price")
-                if (timeoutCounter == 10):
-                    return True
-                driver.refresh()
-                #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-                continue
+            # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same. if there is no trend, set at the From
+            if(priceTrend != 0):
+                #! this depends on the quality. change this accordingly
+                if(quality == "NM"):
+                    percentage = 0.95    
+                elif(quality == "EX"):
+                    percentage = 0.9
+                elif(quality == "GD"):
+                    percentage = 0.85
+                elif(quality == "LP"):
+                    percentage = 0.8
+                elif(quality == "PL"):
+                    percentage = 0.7
+                elif(quality == "PO"):
+                    percentage = 0.6
+                else:
+                    logging.warning(f"Got invalid card quality -> {quality}")
 
-            fields = driver.find_elements(By.XPATH, "/html/body/div[3]/div/div/div[2]/div/form/div")
-            priceField = fields[-2].find_element(By.XPATH, ".//div/input")
-            priceField.clear()
-            priceField.send_keys(str(newSellPrice))
-            fields[-1].find_element(By.XPATH, ".//button").click()
-            
-            # Wait for confirmation
-            if WaitForPage("/html/body/main/div[1]/div", driver):
-                logging.warning(f"Timeout on price change confirmation for card {cardName}")
-                localTimeoutCounter += 1
-                if(localTimeoutCounter == 10):
-                    return True
-                driver.refresh()
-                #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-                continue
+                newSellPrice = round(abs(percentage * (priceTrend - priceFrom)) + priceFrom, 2)
+            else:
+                newSellPrice = round(priceFrom, 2)
+
+            if(sellPrice != newSellPrice):  # Values are different, change current sell price
+                driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
+
+                if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
+                    logging.warning(f"Timeout on changing card {cardName} price")
+                    if (timeoutCounter == 10):
+                        return True
+                    driver.refresh()
+                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    continue
+
+                fields = driver.find_elements(By.XPATH, "/html/body/div[3]/div/div/div[2]/div/form/div")
+                priceField = fields[-2].find_element(By.XPATH, ".//div/input")
+                priceField.clear()
+                priceField.send_keys(str(newSellPrice))
+                fields[-1].find_element(By.XPATH, ".//button").click()
+                
+                # Wait for confirmation
+                if WaitForPage("/html/body/main/div[1]/div", driver):
+                    logging.warning(f"Timeout on price change confirmation for card {cardName}")
+                    localTimeoutCounter += 1
+                    if(localTimeoutCounter == 10):
+                        return True
+                    driver.refresh()
+                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    continue
+
+                logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
+                # Update net and stage change
+                netChange = netChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
+                stageChange = stageChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
+
+                if(newSellPrice > priceCeil or newSellPrice < priceFloor):
+                    cardsMoved += 1
 
             numberOfCard += 1
-            if(newSellPrice > priceCeil or newSellPrice < priceFloor):
-                cardsMoved += 1
-
-        logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
-
-        # Update net and stage change
-        netChange = netChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
-        stageChange = stageChange + (newSellPrice - sellPrice) * (numberOfCard - 1)
 
     # If it was foil, revert to normal mode
     if isFoil:
