@@ -207,24 +207,26 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 if(newSellPrice > priceCeil or newSellPrice < priceFloor):
                     cardsMoved += 1
 
+            # If it was foil, revert to normal mode
+            if isFoil:
+                try:    # Some cards only have a foil version
+                    driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    while True:
+                        if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+                            logging.warning(f"Timeout on reverting foil on card {cardName}")
+                            if (timeoutCounter == 10):
+                                return True
+                            driver.refresh()
+                            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                            continue
+                        break
+                except:
+                    pass
+
             numberOfCard += 1
 
-    # If it was foil, revert to normal mode
-    if isFoil:
-        try:    # Some cards only have a foil version
-            driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-            while True:
-                if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
-                    logging.warning(f"Timeout on reverting foil on card {cardName}")
-                    if (timeoutCounter == 10):
-                        return True
-                    driver.refresh()
-                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-                    continue
-                break
-        except:
-            pass
+    
 
     # All done, close tab
     driver.close()
