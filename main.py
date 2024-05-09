@@ -137,8 +137,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
                 # Get quality of card
                 quality = driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/a/span").get_attribute("innerHTML")
-
-                logging.info(f"card has sellPrice {sellPrice} and quality {quality}")
             except:
                 break    # No more cards
 
@@ -164,7 +162,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             else:
                 newSellPrice = round(priceFrom, 2)
 
-            logging.info(f"newSellPrice is {newSellPrice}")
             if(sellPrice != newSellPrice):  # Values are different, change current sell price
                 driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
 
