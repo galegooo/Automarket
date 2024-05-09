@@ -136,7 +136,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 sellPrice = float(driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[1]/div/div/span").get_attribute("innerHTML")[:-2].replace(',', '.'))
 
                 # Get quality of card
-                quality = driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/a/badge").get_attribute("innerHTML")
+                quality = driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/a/span").get_attribute("innerHTML")
 
                 logging.info(f"card has sellPrice {sellPrice} and quality {quality}")
             except:
