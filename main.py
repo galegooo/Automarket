@@ -314,16 +314,31 @@ def main():
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
     chromedriver = os.getenv("CHROMEDRIVER")
+
     # Setup browser options
     try:
         options = uc.ChromeOptions()
         options.binary_location = os.getenv("BROWSER")
-        #logging.info("setting browser options")
-        options.add_argument('--disable-popup-blocking')
+
+        #?logging.info("setting browser options")
+        # random user agents to choose from
+        user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
+            ]
+        user_agent = random.choice(user_agents)
+        options.add_argument(f'user-agent={user_agent}')
+        #options.add_argument('--disable-popup-blocking')
         options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
+        options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images
         driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
-        stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
+        #stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
         #logging.info("set")
     except Exception as e:
         print("got an error ->", e)
