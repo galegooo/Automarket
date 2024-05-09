@@ -7,7 +7,6 @@ import logging
 from datetime import datetime
 
 from selenium import webdriver
-import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -60,13 +59,13 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             if(counter == 10):
                 return True
             driver.refresh()
-            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
         else:
             break
 
     logging.info(f"Checking {cardName}")    
     
-    time.sleep(random.uniform(0.5, 3))   # Avoid rate limiting
+    #time.sleep(random.uniform(0.5, 3))   # Avoid rate limiting
     driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[1])
     driver.get(cardLink)
@@ -77,7 +76,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             if (timeoutCounter == 10):
                 return True
             driver.refresh()
-            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             continue
         break
 
@@ -85,14 +84,14 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     if isFoil:
         try:    # Some cards only have a foil version
             driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             while True:
                 if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
                     logging.warning(f"Timeout on changing card {cardName} to foil")
                     if (timeoutCounter == 10):
                         return True
                     driver.refresh()
-                    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
                 break
         except:
@@ -152,7 +151,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 if (timeoutCounter == 10):
                     return True
                 driver.refresh()
-                time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
 
             fields = driver.find_elements(By.XPATH, "/html/body/div[3]/div/div/div[2]/div/form/div")
@@ -168,7 +167,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 if(localTimeoutCounter == 10):
                     return True
                 driver.refresh()
-                time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 continue
 
             numberOfCard += 1
@@ -185,14 +184,14 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     if isFoil:
         try:    # Some cards only have a foil version
             driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             while True:
                 if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
                     logging.warning(f"Timeout on reverting foil on card {cardName}")
                     if (timeoutCounter == 10):
                         return True
                     driver.refresh()
-                    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
                 break
         except:
@@ -243,7 +242,7 @@ def setPriceRange(driver, price, priceCeil):
         logging.info(f"---->Checking {price}")
 
     WaitForPage("/html/body/main/div[6]/div[2]", driver)
-    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
 
 def changePriceRange(priceFloor, driver, priceCeil):
     global stageChange, netChange
@@ -280,7 +279,7 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
             else:
                 break
         except:
-            range = driver.find_element(By.XPATH, "/html/body/main/div[3]/div[1]/span/span[1]").text
+            range = driver.find_element(By.XPATH, "/html/body/main/div[4]/div[1]/span/span[1]").text
             logging.info(f"\tRange has {range} cards")
             break
 
@@ -314,7 +313,6 @@ def main():
     global username, password
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
-    chromedriver = os.getenv("CHROMEDRIVER")
 
     # Setup browser options
     try:
@@ -334,11 +332,9 @@ def main():
             ]
         user_agent = random.choice(user_agents)
         options.add_argument(f'user-agent={user_agent}')
-        #options.add_argument('--disable-popup-blocking')
         options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images
-        #driver_executable_path=chromedriver, use_subprocess=True, 
         driver = webdriver.Chrome(options=options)
         stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
         #logging.info("set")
@@ -395,7 +391,7 @@ def main():
         while(cardsMoved != 0):
             # Refresh page and check cards that underflew to this page (cardsMoved)
             driver.refresh()
-            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             WaitForPage(table, driver)
 
             # Check if range has more than 300 cards
@@ -429,7 +425,7 @@ def main():
 
         try:
             driver.find_element(By.XPATH, skipButton).click()
-            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             WaitForPage(table, driver)
         except: # No more pages, change price range
             priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
