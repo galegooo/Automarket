@@ -87,10 +87,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     except:
         isThereFoilVersion = False
 
-
-    
-
-
     #* there can be multiple cards for sale, each with their own prices. go through all
     numberOfCard = 1
     localTimeoutCounter = 0
@@ -225,8 +221,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                     pass
 
             numberOfCard += 1
-
-    
 
     # All done, close tab
     driver.close()
@@ -413,6 +407,7 @@ def main():
             if HandleCard(driver, card, priceFloor, priceCeil):
                 reset = True
                 break
+            logging.info(f"netchange is {netChange}\tstage change is {stageChange}")
 
         if reset:
             break
