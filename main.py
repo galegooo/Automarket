@@ -6,6 +6,7 @@ import signal
 import logging
 from datetime import datetime
 
+from selenium import webdriver
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -317,7 +318,7 @@ def main():
 
     # Setup browser options
     try:
-        options = uc.ChromeOptions()
+        options = webdriver.ChromeOptions()
         options.binary_location = os.getenv("BROWSER")
 
         #?logging.info("setting browser options")
@@ -337,8 +338,8 @@ def main():
         options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images
-        driver = uc.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
-        #stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
+        driver = webdriver.Chrome(driver_executable_path=chromedriver, use_subprocess=True, options=options)
+        stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
         #logging.info("set")
     except Exception as e:
         print("got an error ->", e)
