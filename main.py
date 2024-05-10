@@ -19,8 +19,9 @@ from dotenv import load_dotenv
 def WaitForPage(element, driver):
     global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
 
+    wait = random.uniform(8, 20) # random wait
     try:
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, element)))
+        WebDriverWait(driver, wait).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
         timeoutCounter += 1
         return True
@@ -74,7 +75,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
         if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
             if (timeoutCounter == 10):
                 logging.warning(f"Timeout while opening tab for card {cardName}")
-                driver.save_screenshot("exit.png")
                 return True
             driver.refresh()
             #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
