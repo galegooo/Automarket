@@ -425,7 +425,7 @@ def main():
             logging.warning(f"Checking {cardsMoved} movers")
             # Refresh page and check cards that underflew to this page (cardsMoved)
             driver.refresh()
-            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            time.sleep(random.uniform(1, 3)) # Prevent false positive and rate limiting
             while True:
                 if WaitForPage(table, driver):
                     if (timeoutCounter == 10):
@@ -448,15 +448,14 @@ def main():
             table += "/div[2]/div"
 
             cards = driver.find_elements(By.XPATH, table)
-            iter = 0
             check = cardsMoved
             cardsMoved = 0
-            for card in reversed(cards):
+            for iter, card in enumerate(reversed(cards)):
                 if HandleCard(driver, card, priceFloor, priceCeil):
                     reset = True
                     break
-                iter += 1
-                if(iter == check):
+                
+                if(iter == check - 1):
                     break
                 
         # Check if there's another page
