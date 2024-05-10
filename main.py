@@ -409,7 +409,7 @@ def main():
         table += "/div[2]/div"
         cards = driver.find_elements(By.XPATH, table)
         cardsMoved = 0
-        for card in cards[:-1]: # ignoring last one because it's not a card
+        for card in cards:
             if HandleCard(driver, card, priceFloor, priceCeil):
                 reset = True
                 break
@@ -450,9 +450,9 @@ def main():
                 
         # Check if there's another page
         if not tooManyCards:
-            skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
+            skipButton = "/html/body/main/div[4]/div[2]/div/a[2]"
         else:
-            skipButton = "/html/body/main/div[6]/div[2]/div/a[2]"
+            skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
 
         try:
             driver.find_element(By.XPATH, skipButton).click()
