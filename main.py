@@ -409,6 +409,7 @@ def main():
 
         table += "/div[2]/div"
         cards = driver.find_elements(By.XPATH, table)
+        logging.warning(f"Handling {len(cards)} cards")
         cardsMoved = 0
         for card in cards:
             if HandleCard(driver, card, priceFloor, priceCeil):
@@ -421,10 +422,19 @@ def main():
         # * This method will eventually check cards that were already checked. Still, better to check twice than none. It may also happen that it doesn't check enough cards, still better than checking none
         check = cardsMoved
         while(cardsMoved != 0):
+            logging.warning(f"Checking {cardsMoved} movers")
             # Refresh page and check cards that underflew to this page (cardsMoved)
             driver.refresh()
             #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-            WaitForPage(table, driver)
+            while True:
+                if WaitForPage(table, driver):
+                    if (timeoutCounter == 10):
+                        logging.warning(f"Timeout while refreshing page")
+                        return True
+                    driver.refresh()
+                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    continue
+                break
 
             # Check if range has more than 300 cards
             tooManyCards = False
