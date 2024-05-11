@@ -448,6 +448,8 @@ def main():
             table += "/div[2]/div"
 
             cards = driver.find_elements(By.XPATH, table)
+            logging.warning(f"Handling {len(cards)} cards")
+            driver.save_screenshot("screen.png")
             check = cardsMoved
             cardsMoved = 0
             for iter, card in enumerate(reversed(cards)):
