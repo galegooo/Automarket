@@ -409,7 +409,6 @@ def main():
 
         table += "/div[2]/div"
         cards = driver.find_elements(By.XPATH, table)
-        logging.warning(f"Handling {len(cards)} cards")
         cardsMoved = 0
         for card in cards:
             if HandleCard(driver, card, priceFloor, priceCeil):
@@ -422,7 +421,6 @@ def main():
         # * This method will eventually check cards that were already checked. Still, better to check twice than none. It may also happen that it doesn't check enough cards, still better than checking none
         check = cardsMoved
         while(cardsMoved != 0):
-            logging.warning(f"Checking {cardsMoved} movers")
             # Refresh page and check cards that underflew to this page (cardsMoved)
             driver.refresh()
             time.sleep(random.uniform(1, 3)) # Prevent false positive and rate limiting
@@ -440,15 +438,14 @@ def main():
             tooManyCards = False
             try:
                 driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
-                table = "/html/body/main/div[7]"
+                table = "/html/body/main/div[6]"
                 tooManyCards = True
             except:
-                table = "/html/body/main/div[6]"
+                table = "/html/body/main/div[5]"
 
             table += "/div[2]/div"
 
             cards = driver.find_elements(By.XPATH, table)
-            logging.warning(f"Handling {len(cards)} cards")
             driver.save_screenshot("screen.png")
             check = cardsMoved
             cardsMoved = 0
