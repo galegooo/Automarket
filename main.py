@@ -30,7 +30,7 @@ def WaitForPage(element, driver):
     return False
 
 def HandleCard(driver, card, priceFloor, priceCeil):
-    global netChange, stageChange, cardsMoved, timeoutCounter
+    global netChange, stageChange, cardsMoved, timeoutCounter, countSinceLastChange
 
     # Check if card is foil
     # card = /html/body/main/div[6/5(depends on if page is at max card count)]/div[2]/div[*]
@@ -170,6 +170,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 newSellPrice = round(priceFrom, 2)
 
             if(sellPrice != newSellPrice):  # Values are different, change current sell price
+                countSinceLastChange = 0    # this is global
                 driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
 
                 if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
@@ -203,6 +204,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
                 if(newSellPrice > priceCeil or newSellPrice < priceFloor):
                     cardsMoved += 1
+            else:   # not changing price
+                countSinceLastChange += 1    # this is global
 
             # If it was foil, revert to normal mode
             if isFoil:
@@ -318,7 +321,7 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
     return priceFloor, priceCeil
 
 def main():
-    global timeoutCounter   # If this reaches 10, exit program
+    global timeoutCounter, countSinceLastChange   # If this reaches 10, exit program
     timeoutCounter = 0
     
     # Handle Ctrl+C from user
@@ -410,10 +413,15 @@ def main():
         table += "/div[2]/div"
         cards = driver.find_elements(By.XPATH, table)
         cardsMoved = 0
+        countSinceLastChange = 0    # this is global
         for card in cards:
             if HandleCard(driver, card, priceFloor, priceCeil):
                 reset = True
                 break
+
+            if(countSinceLastChange > 4):   # haven't changed the price in a bit, slow down because of rate limiting
+                time.sleep(random.uniform(2, 6))
+                countSinceLastChange = 0    
 
         if reset:
             break
