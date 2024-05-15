@@ -274,10 +274,13 @@ def setPriceRange(driver, price, priceCeil):
         if WaitForPage("/html/body/main/div[6]/div[2]", driver):
             if (timeoutCounter == 10):
                 logging.warning("Timeout on changing price range")
+                driver.quit()
                 return True
             driver.refresh()
             continue
         break
+
+    return False
 
 def changePriceRange(priceFloor, driver, priceCeil):
     global stageChange, netChange
@@ -292,7 +295,8 @@ def changePriceRange(priceFloor, driver, priceCeil):
     elif(priceFloor > priceCeil):
         priceFloor = priceCeil
         
-    setPriceRange(driver, priceFloor, priceCeil)
+    if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
+        return False, False
     priceFloor, priceCeil = checkForMaxRange(driver, priceFloor, priceCeil)
 
     return priceFloor, priceCeil
@@ -310,7 +314,8 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
             # If program reaches here, too many cards. Try to change price range
             if(priceFloor != priceCeil):
                 priceFloor = round(priceFloor + 0.01, 2)
-                setPriceRange(driver, priceFloor, priceCeil)
+                if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
+                    return False, False
             else:
                 break
         except:
@@ -395,8 +400,13 @@ def main():
     else:
         priceCeil = round(priceFloor + 0.1 * priceFloor, 2)
 
-    setPriceRange(driver, priceFloor, priceCeil)
+    if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
+        driver.quit()
+        quit()
     priceFloor, priceCeil = checkForMaxRange(driver, priceFloor, priceCeil)
+    if(priceFloor == False and priceCeil == False):
+        driver.quit()
+        quit()
 
     reset = False
     # Iterate through every card
@@ -436,6 +446,7 @@ def main():
                 if WaitForPage(table, driver):
                     if (timeoutCounter == 10):
                         logging.warning(f"Timeout while refreshing page")
+                        driver.quit()
                         return True
                     driver.refresh()
                     #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
