@@ -303,6 +303,7 @@ def changePriceRange(priceFloor, driver, priceCeil):
 
 def handler(signum, frame):
     logging.warning(f"User terminated program - Net change is {round(netChange, 2)}")
+    driver.quit()
     quit()
      
 def checkForMaxRange(driver, priceFloor, priceCeil):
@@ -326,7 +327,7 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
     return priceFloor, priceCeil
 
 def main():
-    global timeoutCounter, countSinceLastChange   # If this reaches 10, exit program
+    global timeoutCounter, countSinceLastChange, driver   # If this reaches 10, exit program
     timeoutCounter = 0
     
     # Handle Ctrl+C from user
