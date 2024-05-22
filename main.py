@@ -373,6 +373,7 @@ def main():
             ]
         user_agent = random.choice(user_agents)
         options.add_argument(f'user-agent={user_agent}')
+        options.add_argument("--no-sandbox")
         options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images
@@ -466,7 +467,6 @@ def main():
             table += "/div[2]/div"
 
             cards = driver.find_elements(By.XPATH, table)
-            driver.save_screenshot("screen.png")
             check = cardsMoved
             cardsMoved = 0
             for iter, card in enumerate(reversed(cards)):
