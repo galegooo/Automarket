@@ -113,7 +113,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             if isFoil:
                 try:    # Some cards only have a foil version
                     driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    time.sleep(random.uniform(1, 3)) # Prevent false positive and rate limiting
                     while True:
                         if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
                             if (timeoutCounter == 10):
@@ -211,7 +211,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             if isFoil:
                 try:    # Some cards only have a foil version
                     driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    time.sleep(random.uniform(1, 3)) # Prevent false positive and rate limiting
                     while True:
                         if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
                             if (timeoutCounter == 10):
@@ -372,8 +372,8 @@ def main():
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
             ]
         user_agent = random.choice(user_agents)
-        options.add_argument(f'user-agent={user_agent}')
         options.add_argument("--no-sandbox")
+        options.add_argument(f'user-agent={user_agent}')
         options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images

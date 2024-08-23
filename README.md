@@ -2,7 +2,7 @@
 Automarket is a tool to automatically alter the price of cards posted in https://www.cardmarket.com
 TCGs tested -> MTG 
 
-This is a personal project, it's working fine in my machine as of this commit but it might break in the future.
+This is a personal project, it's working fine in my machine but it might break in the future (as it has several times).
 Tested in Ubuntu Server and Arch Linux.
 
 ## How to use it
