@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 def WaitForPage(element, driver):
     global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
 
-    wait = random.uniform(8, 20) # random wait
+    wait = random.uniform(5, 10) # random wait
     try:
         WebDriverWait(driver, wait).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
@@ -101,7 +101,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
                 # check if card is foil
                 try:
-                    driver.find_element(By.XPATH, "/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/span[2]")
+                    driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/span[2]")
                     isFoil = True
                 except:
                     isFoil = False
@@ -236,12 +236,16 @@ def LogIn(driver):
 
     # Open the webpage and wait for it to load
     driver.get(os.getenv("URL"))
-    WaitForPage("/html/body/header/div[1]/div/div/form/button", driver)
+    try:
+        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, "/html/body/header/div[1]/div/div/form/div/button")))
+    except TimeoutException:
+        logging.warning("Couldn't open page")
+        return False
 
     #logging.info("page is opened")
     # Accept cookies (this takes care of future problems)
     try:
-        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/button").click()
+        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/div/button").click()
     except:
         pass
 
@@ -394,7 +398,9 @@ def main():
     global cardsMoved
 
     #logging.info("going to log in")
-    LogIn(driver)
+    if(LogIn(driver) == False):
+        driver.quit()
+        quit()
 
     priceFloor = priceToStart
     if(priceFloor == 1):
