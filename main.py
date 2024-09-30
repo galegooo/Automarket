@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 def WaitForPage(element, driver):
     global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
 
-    wait = random.uniform(8, 20) # random wait
+    wait = random.uniform(3, 10) # random wait
     try:
         WebDriverWait(driver, wait).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
@@ -35,7 +35,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
     # Check if card is foil
     # card = /html/body/main/div[6/5(depends on if page is at max card count)]/div[2]/div[*]
     try:
-        card.find_element(By.XPATH, ".//div[3]/div/div[2]/div/div[1]/div/span[3]")
+        card.find_element(By.XPATH, ".//div[3]/div/div[2]/div/div[1]/span[2]")
         isFoil = True
     except:
         isFoil = False
@@ -101,10 +101,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
                 # check if card is foil
                 try:
-                    driver.find_element(By.XPATH, "/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/span[2]")
+                    driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/span[2]")
                     isFoil = True
                 except:
                     isFoil = False
+            
             except:
                 break    # No more cards
 
@@ -113,7 +114,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             if isFoil:
                 try:    # Some cards only have a foil version
                     driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     while True:
                         if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
                             if (timeoutCounter == 10):
@@ -124,6 +125,8 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                             continue
                         break
                 except:
+                    returnvalue = driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+                    logging.info(f"didn't find button, {returnvalue}")
                     pass
 
             #* Get current price trend and price minimum (removing " $" and replacing ',' by '.')
@@ -211,9 +214,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             if isFoil:
                 try:    # Some cards only have a foil version
                     driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     while True:
-                        if WaitForPage("/html/body/main/div[3]/div[1]/h1", driver):
+                        if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
                             if (timeoutCounter == 10):
                                 logging.warning(f"Timeout on reverting foil on card {cardName}")
                                 return True
@@ -241,7 +244,7 @@ def LogIn(driver):
     #logging.info("page is opened")
     # Accept cookies (this takes care of future problems)
     try:
-        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/button").click()
+        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/div/button").click()
     except:
         pass
 
@@ -254,10 +257,10 @@ def LogIn(driver):
     WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
     #logging.info("Logged in")
 
-    # Open active listings
-    listingsLink = os.getenv("URL") + "/Stock/Offers/Singles"
-    driver.get(listingsLink)
-    WaitForPage("/html/body/main/div[7]/div[2]/div[1]/div[3]/div/div[1]/a", driver)
+    # Open active listings ! no longer needed, just straight to startingPrice
+    #listingsLink = os.getenv("URL") + "/Stock/Offers/Singles"
+    #driver.get(listingsLink)
+    #WaitForPage("/html/body/main/div[7]/div[2]/div[1]/div[3]/div/div[1]/a", driver)
 
 def setPriceRange(driver, price, priceCeil):
     # Filter by price
@@ -342,8 +345,8 @@ def main():
     priceToStart = 1
     if(len(sys.argv) > 1):
         priceToStart = float(sys.argv[1])
-    else:
-        priceToStart = float(input("From which price would you like to start? "))
+    #else:
+        #priceToStart = float(input("From which price would you like to start? "))
 
     global username, password
     username = os.getenv("LOGINUSER")
@@ -367,7 +370,7 @@ def main():
             ]
         user_agent = random.choice(user_agents)
         options.add_argument(f'user-agent={user_agent}')
-        options.add_argument("--headless")
+        #options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images
         driver = webdriver.Chrome(options=options)
@@ -419,8 +422,9 @@ def main():
                 reset = True
                 break
 
-            if(countSinceLastChange > 4):   # haven't changed the price in a bit, slow down because of rate limiting
-                time.sleep(random.uniform(2, 6))
+            slowdown = random.random(2, 6)
+            if(countSinceLastChange > slowdown):   # haven't changed the price in a bit, slow down because of rate limiting
+                time.sleep(random.uniform(1, 4))
                 countSinceLastChange = 0    
 
         if reset:
@@ -430,8 +434,9 @@ def main():
         check = cardsMoved
         while(cardsMoved != 0):
             # Refresh page and check cards that underflew to this page (cardsMoved)
+            logging.info("checking underflow")
             driver.refresh()
-            time.sleep(random.uniform(1, 3)) # Prevent false positive and rate limiting
+            time.sleep(random.uniform(2, 5)) # Prevent false positive and rate limiting
             while True:
                 if WaitForPage(table, driver):
                     if (timeoutCounter == 10):
@@ -454,7 +459,6 @@ def main():
             table += "/div[2]/div"
 
             cards = driver.find_elements(By.XPATH, table)
-            driver.save_screenshot("screen.png")
             check = cardsMoved
             cardsMoved = 0
             for iter, card in enumerate(reversed(cards)):
@@ -464,6 +468,8 @@ def main():
                 
                 if(iter == check - 1):
                     break
+
+            logging.info(f"cardsMoved is {cardsMoved}")
                 
         # Check if there's another page
         if not tooManyCards:
