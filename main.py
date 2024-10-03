@@ -239,7 +239,13 @@ def LogIn(driver):
 
     # Open the webpage and wait for it to load
     driver.get(os.getenv("URL"))
-    WaitForPage("/html/body/header/div[1]/div/div/form/button", driver)
+    while True:
+      if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver):
+        if (timeoutCounter == 10):
+          logging.warning(f"Timeout while loading webpage")
+          return True
+        continue
+      break
 
     #logging.info("page is opened")
     # Accept cookies (this takes care of future problems)
@@ -370,7 +376,7 @@ def main():
             ]
         user_agent = random.choice(user_agents)
         options.add_argument(f'user-agent={user_agent}')
-        #options.add_argument("--headless")
+        options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images
         driver = webdriver.Chrome(options=options)
@@ -390,7 +396,9 @@ def main():
     global cardsMoved
 
     #logging.info("going to log in")
-    LogIn(driver)
+    if LogIn(driver):
+      driver.quit()
+      quit()
 
     priceFloor = priceToStart
     if(priceFloor == 1):
@@ -422,7 +430,7 @@ def main():
                 reset = True
                 break
 
-            slowdown = random.random(2, 6)
+            slowdown = random.randint(2, 6)
             if(countSinceLastChange > slowdown):   # haven't changed the price in a bit, slow down because of rate limiting
                 time.sleep(random.uniform(1, 4))
                 countSinceLastChange = 0    
