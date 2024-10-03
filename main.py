@@ -112,22 +112,20 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             
             # If card is foil, check the box first
             if isFoil:
-                try:    # Some cards only have a foil version
-                    driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-                    time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-                    while True:
-                        if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
-                            if (timeoutCounter == 10):
-                                logging.warning(f"Timeout on changing card {cardName} to foil")
-                                return True
-                            driver.refresh()
-                            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-                            continue
-                        break
-                except:
-                    returnvalue = driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-                    logging.info(f"didn't find button, {returnvalue}")
-                    pass
+              try:    # Some cards only have a foil version
+                driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+                time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                while True:
+                    if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
+                        if (timeoutCounter == 10):
+                            logging.warning(f"Timeout on changing card {cardName} to foil")
+                            return True
+                        driver.refresh()
+                        #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                        continue
+                    break
+              except:
+                pass
 
             #* Get current price trend and price minimum (removing " $" and replacing ',' by '.')
             if isThereFoilVersion:
@@ -442,7 +440,6 @@ def main():
         check = cardsMoved
         while(cardsMoved != 0):
             # Refresh page and check cards that underflew to this page (cardsMoved)
-            logging.info("checking underflow")
             driver.refresh()
             time.sleep(random.uniform(2, 5)) # Prevent false positive and rate limiting
             while True:
@@ -477,8 +474,6 @@ def main():
                 if(iter == check - 1):
                     break
 
-            logging.info(f"cardsMoved is {cardsMoved}")
-                
         # Check if there's another page
         if not tooManyCards:
             skipButton = "/html/body/main/div[4]/div[2]/div/a[2]"
