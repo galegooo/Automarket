@@ -199,7 +199,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                     continue
 
                 logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
-                if(newSellPrice - sellPrice > 0.1 * sellPrice):
+                if(abs(newSellPrice - sellPrice) > 0.1 * sellPrice):
                     logging.info("\tCHANGED MORE THAN 10%")
                 # Update net and stage change
                 netChange = netChange + (newSellPrice - sellPrice)
@@ -319,7 +319,7 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
     while True:
         # Check if price range has more than 300 cards
         try:
-            driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
+            driver.find_element(By.XPATH, "/html/body/main/div[4]/small")
             logging.warning("Range has 300+ cards")
             # If program reaches here, too many cards. Try to change price range
             if(priceFloor != priceCeil):
