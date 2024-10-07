@@ -442,7 +442,7 @@ def main():
 
             slowdown = random.randint(2, 6)
             if(countSinceLastChange > slowdown):   # haven't changed the price in a bit, slow down because of rate limiting
-                time.sleep(random.uniform(1, 4))
+                time.sleep(random.uniform(2, 7))
                 countSinceLastChange = 0    
 
         if reset:
