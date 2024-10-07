@@ -427,7 +427,7 @@ def main():
         # Check if range has more than 300 cards
         tooManyCards = False
         try:
-            driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
+            driver.find_element(By.XPATH, "/html/body/main/div[4]/small")
             table = "/html/body/main/div[6]"
             tooManyCards = True
         except:
@@ -470,7 +470,7 @@ def main():
             # Check if range has more than 300 cards
             tooManyCards = False
             try:
-                driver.find_element(By.XPATH, "/html/body/main/div[5]/small")
+                driver.find_element(By.XPATH, "/html/body/main/div[4]/small")
                 table = "/html/body/main/div[6]"
                 tooManyCards = True
             except:
@@ -491,13 +491,13 @@ def main():
 
         # Check if there's another page
         if not tooManyCards:
-            skipButton = "/html/body/main/div[4]/div[2]/div/a[2]"
+            skipButton = "/html/body/main/div[6]/div[2]/div/a[2]"
         else:
-            skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
+            skipButton = "/html/body/main/div[7]/div[2]/div/a[2]"
 
         try:
             driver.find_element(By.XPATH, skipButton).click()
-            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+            time.sleep(random.uniform(2, 5)) # Prevent false positive
             WaitForPage(table, driver)
         except: # No more pages, change price range
             priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
