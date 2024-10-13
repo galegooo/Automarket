@@ -60,7 +60,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
             if(counter == 10):
                 return True
             driver.refresh()
-            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
         else:
             break
 
@@ -77,7 +76,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 logging.warning(f"Timeout while opening tab for card {cardName}")
                 return True
             driver.refresh()
-            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
             continue
         break
 
@@ -121,7 +119,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                             logging.warning(f"Timeout on changing card {cardName} to foil")
                             return True
                         driver.refresh()
-                        #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                         continue
                     break
               except:
@@ -179,7 +176,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                         logging.warning(f"Timeout on changing card {cardName} price")
                         return True
                     driver.refresh()
-                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
 
                 fields = driver.find_elements(By.XPATH, "/html/body/div[3]/div/div/div[2]/div/form/div")
@@ -195,12 +191,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                         logging.warning(f"Timeout on price change confirmation for card {cardName}")
                         return True
                     driver.refresh()
-                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
 
                 logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
-                if(abs(newSellPrice - sellPrice) > 0.1 * sellPrice):
-                    logging.info("\tCHANGED MORE THAN 10%")
+                if(abs(newSellPrice - sellPrice) > 0.25 * sellPrice):
+                    logging.info("\t^^^CHANGED MORE THAN 25%^^^")
                 # Update net and stage change
                 netChange = netChange + (newSellPrice - sellPrice)
                 stageChange = stageChange + (newSellPrice - sellPrice)
@@ -221,7 +216,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                                 logging.warning(f"Timeout on reverting foil on card {cardName}")
                                 return True
                             driver.refresh()
-                            #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                             continue
                         break
                 except:
@@ -298,7 +292,7 @@ def changePriceRange(priceFloor, driver, priceCeil):
     stageChange = 0
 
     priceCeil = round(priceFloor - 0.01, 2)
-    priceFloor = round(priceFloor - 0.1 * priceFloor, 2)
+    priceFloor = round(priceFloor - 0.2 * priceFloor, 2)
     if(priceFloor < 0):
         return False, False
     elif(priceFloor > priceCeil):
@@ -460,10 +454,12 @@ def main():
                 if WaitForPage(table, driver):
                     if (timeoutCounter == 10):
                         logging.warning(f"Timeout while refreshing page")
+                        now = datetime.now()
+                        finishingTime = now.strftime("%Y/%m/%d %H:%M:%S")
+                        logging.info(f"Finished review at {finishingTime} - Net change is {round(netChange, 2)}")
                         driver.quit()
-                        return True
+                        quit()
                     driver.refresh()
-                    #time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                     continue
                 break
 
@@ -491,9 +487,9 @@ def main():
 
         # Check if there's another page
         if not tooManyCards:
-            skipButton = "/html/body/main/div[6]/div[2]/div/a[2]"
+            skipButton = "/html/body/main/div[4]/div[2]/div/a[2]"
         else:
-            skipButton = "/html/body/main/div[7]/div[2]/div/a[2]"
+            skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
 
         try:
             driver.find_element(By.XPATH, skipButton).click()
