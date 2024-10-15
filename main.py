@@ -351,8 +351,6 @@ def main():
     priceToStart = 1
     if(len(sys.argv) > 1):
         priceToStart = float(sys.argv[1])
-    #else:
-        #priceToStart = float(input("From which price would you like to start? "))
 
     global username, password
     username = os.getenv("LOGINUSER")
@@ -402,9 +400,10 @@ def main():
       quit()
 
     priceFloor = priceToStart
+    priceCeil = priceToStart
     if(priceFloor == 1):
         priceCeil = 1000
-    else:
+    elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards)
         priceCeil = round(priceFloor + 0.1 * priceFloor, 2)
 
     if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
