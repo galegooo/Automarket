@@ -330,6 +330,8 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
     return priceFloor, priceCeil
 
 def skipToPage(page, priceFloor, priceCeil):
+    logging.info(f"Skipping to page {page}")
+    
     URLaddon = f"?minPrice={priceFloor}&maxPrice={priceCeil}&site={page}"
     link = os.getenv("URL") + "/Stock/Offers/Singles" + URLaddon
     driver.get(link)
