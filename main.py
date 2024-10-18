@@ -329,6 +329,22 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
 
     return priceFloor, priceCeil
 
+def skipToPage(page, priceFloor, priceCeil):
+    URLaddon = f"?minPrice={priceFloor}&maxPrice={priceCeil}&site={page}"
+    link = os.getenv("URL") + "/Stock/Offers/Singles" + URLaddon
+    driver.get(link)
+
+    while True:
+        if WaitForPage("/html/body/main/div[6]/div[2]", driver):
+            if (timeoutCounter == 10):
+                logging.warning("Timeout on changing price range")
+                driver.quit()
+                return True
+            driver.refresh()
+            continue
+        break
+
+
 def main():
     global timeoutCounter, countSinceLastChange, driver   # If this reaches 10, exit program
     timeoutCounter = 0
@@ -347,9 +363,13 @@ def main():
     startingTime = now.strftime("%Y/%m/%d %H:%M:%S")
     logging.info(f"Starting review at {startingTime}")
 
-    # Check if a command line argument was given (price to start from)
+    # Check if a command line argument was given (price to start from and/or page)
     priceToStart = 1
-    if(len(sys.argv) > 1):
+    pageToStart = 1
+    if(len(sys.argv) == 3):
+        pageToStart = int(sys.argv[2]) 
+        priceToStart = float(sys.argv[1])
+    elif(len(sys.argv) == 2):
         priceToStart = float(sys.argv[1])
 
     global username, password
@@ -413,6 +433,9 @@ def main():
     if(priceFloor == False and priceCeil == False):
         driver.quit()
         quit()
+
+    if(pageToStart != 1):
+        skipToPage(pageToStart, priceFloor, priceCeil)
 
     reset = False
     # Iterate through every card
