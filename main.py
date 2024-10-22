@@ -426,7 +426,7 @@ def main():
     if(priceFloor == 1):
         priceCeil = 1000
     elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards)
-        priceCeil = round(priceFloor + 0.1 * priceFloor, 2)
+        priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
     if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
         driver.quit()
