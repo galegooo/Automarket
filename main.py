@@ -29,16 +29,8 @@ def WaitForPage(element, driver):
     timeoutCounter = 0
     return False
 
-def HandleCard(driver, card, priceFloor, priceCeil):
+def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main/div[6/5(depends on if page is at max card count)]/div[2]/div[*]
     global netChange, stageChange, cardsMoved, timeoutCounter, countSinceLastChange
-
-    # Check if card is foil
-    # card = /html/body/main/div[6/5(depends on if page is at max card count)]/div[2]/div[*]
-    try:
-        card.find_element(By.XPATH, ".//div[3]/div/div[2]/div/div[1]/span[2]")
-        isFoil = True
-    except:
-        isFoil = False
 
     counter = 0
     while True:
@@ -80,9 +72,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):
         break
 
     # Check for existence of foil version
-    isThereFoilVersion = True
     try:
         driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label")
+        isThereFoilVersion = True
     except:
         isThereFoilVersion = False
 
@@ -101,6 +93,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                 try:
                     driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/span[2]")
                     isFoil = True
+                    logging.warning("card is foil")    #! remove
                 except:
                     isFoil = False
             
@@ -145,6 +138,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):
 
                 priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
+            logging.warning(f"price trend is {priceTrend}; from is {priceFrom}")
             # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same. if there is no trend, set at the From
             if(priceTrend != 0):
                 #! this depends on the quality. change this accordingly
@@ -193,9 +187,10 @@ def HandleCard(driver, card, priceFloor, priceCeil):
                     driver.refresh()
                     continue
 
-                logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
+                logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}; from is {priceFrom}")
                 if(abs(newSellPrice - sellPrice) > 0.25 * sellPrice):
                     logging.info("\t^^^CHANGED MORE THAN 25%^^^")
+                    
                 # Update net and stage change
                 netChange = netChange + (newSellPrice - sellPrice)
                 stageChange = stageChange + (newSellPrice - sellPrice)
@@ -425,7 +420,7 @@ def main():
     priceCeil = priceToStart
     if(priceFloor == 1):
         priceCeil = 1000
-    elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards)
+    elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards): priceFloor = priceCeil
         priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
     if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
@@ -462,7 +457,7 @@ def main():
 
             slowdown = random.randint(2, 6)
             if(countSinceLastChange > slowdown):   # haven't changed the price in a bit, slow down because of rate limiting
-                time.sleep(random.uniform(2, 7))
+                time.sleep(random.uniform(4, 8))
                 countSinceLastChange = 0    
 
         if reset:
