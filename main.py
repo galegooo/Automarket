@@ -93,7 +93,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
                 try:
                     driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[2]/div/div[2]/div/div[1]/span[2]")
                     isFoil = True
-                    logging.warning("card is foil")    #! remove
                 except:
                     isFoil = False
             
@@ -138,7 +137,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
 
                 priceFrom = float(driver.find_elements(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/div/div[2]/dl/dd")[-5].get_attribute("innerHTML")[:-2].replace(',', '.'))
 
-            logging.warning(f"price trend is {priceTrend}; from is {priceFrom}")
             # Calculate the new sell price (with 2 decimal places) and check if current sell price is the same. if there is no trend, set at the From
             if(priceTrend != 0):
                 #! this depends on the quality. change this accordingly
