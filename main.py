@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 def WaitForPage(element, driver):
     global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
 
-    wait = random.uniform(3, 10) # random wait
+    wait = random.uniform(5, 11) # random wait
     try:
         WebDriverWait(driver, wait).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
@@ -30,7 +30,7 @@ def WaitForPage(element, driver):
     return False
 
 def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main/div[6/5(depends on if page is at max card count)]/div[2]/div[*]
-    global netChange, stageChange, cardsMoved, timeoutCounter, countSinceLastChange
+    global netChange, stageChange, cardsMoved, timeoutCounter
 
     counter = 0
     while True:
@@ -57,7 +57,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
 
     logging.info(f"Checking {cardName}")    
     
-    time.sleep(random.uniform(0.5, 1))   # Avoid rate limiting
+    #time.sleep(random.uniform(0.5, 1))   # Avoid rate limiting
     driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[1])
     driver.get(cardLink)
@@ -82,7 +82,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
     numberOfCard = 1
     localTimeoutCounter = 0
     while True:
-        time.sleep(random.uniform(0.5, 1))   # Avoid rate limiting
+        #time.sleep(random.uniform(0.5, 1))   # Avoid rate limiting
         try:    # check if there is another card
             # Get current sell price
             sellPrice = float(driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[1]/div/div/span").get_attribute("innerHTML")[:-2].replace(',', '.'))
@@ -104,18 +104,18 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
         # If card is foil, check the box first
         if isFoil:
             try:    # Some cards only have a foil version
-            driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
-            time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
-            while True:
-                if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
-                    if (timeoutCounter == 10):
-                        logging.warning(f"Timeout on changing card {cardName} to foil")
-                        return True
-                    driver.refresh()
-                    continue
-                break
+                driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
+                time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
+                while True:
+                    if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
+                        if (timeoutCounter == 10):
+                            logging.warning(f"Timeout on changing card {cardName} to foil")
+                            return True
+                        driver.refresh()
+                        continue
+                    break
             except:
-            pass
+                pass
 
         #* Get current price trend and price minimum (removing " $" and replacing ',' by '.')
         if isThereFoilVersion:
@@ -161,12 +161,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
             newSellPrice = round(priceFrom, 2)
 
         if(sellPrice != newSellPrice):  # Values are different, change current sell price
-            countSinceLastChange = 0    # this is global
             driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
 
             if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
                 if (timeoutCounter == 10):
-                    logging.warning(f"Timeout on changing card {cardName} price")
+                    logging.warning(f"Timeout on opening window to change card {cardName} price")
                     return True
                 driver.refresh()
                 continue
@@ -180,10 +179,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
             # Wait for confirmation
             if WaitForPage("/html/body/main/div[1]/div", driver):
                 localTimeoutCounter += 1
+                time.sleep(localTimeoutCounter * random.uniform(4, 10)) # incrementing wait
                 if(localTimeoutCounter == 10):
-                    logging.warning(f"Timeout on price change confirmation for card {cardName}")
+                    logging.warning(f"Timeout on price change confirmation on card {cardName}")
                     return True
-                driver.refresh()
+                driver.refresh()    
                 continue
 
             logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}; from is {priceFrom}")
@@ -196,8 +196,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
 
             if(newSellPrice > priceCeil or newSellPrice < priceFloor):
                 cardsMoved += 1
-        else:   # not changing price
-            countSinceLastChange += 1    # this is global
 
         # If it was foil, revert to normal mode
         if isFoil:
@@ -342,7 +340,7 @@ def skipToPage(page, priceFloor, priceCeil):
 
 
 def main():
-    global timeoutCounter, countSinceLastChange, driver   # If this reaches 10, exit program
+    global timeoutCounter, driver   # If this reaches 10, exit program
     timeoutCounter = 0
     
     # Handle Ctrl+C from user
@@ -448,17 +446,18 @@ def main():
         table += "/div[2]/div"
         cards = driver.find_elements(By.XPATH, table)
         cardsMoved = 0
-        countSinceLastChange = 0    # this is global
         slowdown = random.randint(1, 5)
+        numCards = 0    # count how many cards were checked
         for card in cards:
             if HandleCard(driver, card, priceFloor, priceCeil):
                 reset = True
                 break
 
-            if(countSinceLastChange >= slowdown):   # haven't changed the price in a bit, slow down because of rate limiting
+            numCards = numCards + 1
+            if(numCards >= slowdown):   # slow down because of rate limiting
                 time.sleep(random.uniform(4, 10))
-                countSinceLastChange = 0    
                 slowdown = random.randint(1, 5)
+                numCards = 0
 
         if reset:
             break
