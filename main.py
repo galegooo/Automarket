@@ -338,6 +338,82 @@ def skipToPage(page, priceFloor, priceCeil):
             continue
         break
 
+def iterateCards(driver, priceFloor, priceCeil):
+    while True:
+        # Check if range has more than 300 cards
+        tooManyCards = False
+        try:
+            driver.find_element(By.XPATH, "/html/body/main/div[4]/small")
+            table = "/html/body/main/div[6]"
+            tooManyCards = True
+        except:
+            table = "/html/body/main/div[5]"
+
+        table += "/div[2]/div"
+        cards = driver.find_elements(By.XPATH, table)
+        cardsMoved = 0
+        slowdown = random.randint(1, 5)
+        numCards = 0    # count how many cards were checked
+        for card in cards:
+            if HandleCard(driver, card, priceFloor, priceCeil): # if this returns true, something went wrong
+                return
+
+            numCards = numCards + 1
+            if(numCards >= slowdown):   # slow down because of rate limiting
+                time.sleep(random.uniform(4, 10))
+                slowdown = random.randint(1, 5)
+                numCards = 0
+
+        # * This method will eventually check cards that were already checked. Still, better to check twice than none. It may also happen that it doesn't check enough cards, still better than checking none
+        check = cardsMoved
+        while(cardsMoved != 0):
+            # Refresh page and check cards that underflew to this page (cardsMoved)
+            driver.refresh()
+            time.sleep(random.uniform(2, 5)) # Prevent false positive and rate limiting
+            while True:
+                if WaitForPage(table, driver):
+                    if (timeoutCounter == 10):
+                        logging.warning(f"Timeout while refreshing page")
+                        return
+                    driver.refresh()
+                    continue
+                break
+
+            # Check if range has more than 300 cards
+            tooManyCards = False
+            try:
+                driver.find_element(By.XPATH, "/html/body/main/div[4]/small")
+                table = "/html/body/main/div[6]"
+                tooManyCards = True
+            except:
+                table = "/html/body/main/div[5]"
+
+            table += "/div[2]/div"
+
+            cards = driver.find_elements(By.XPATH, table)
+            check = cardsMoved
+            cardsMoved = 0
+            for iter, card in enumerate(reversed(cards)):
+                if HandleCard(driver, card, priceFloor, priceCeil):
+                    return
+                
+                if(iter == check - 1):
+                    break
+
+        # Check if there's another page
+        if not tooManyCards:
+            skipButton = "/html/body/main/div[4]/div[2]/div/a[2]"
+        else:
+            skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
+
+        try:
+            driver.find_element(By.XPATH, skipButton).click()
+            time.sleep(random.uniform(2, 5)) # Prevent false positive
+            WaitForPage(table, driver)
+        except: # No more pages, change price range
+            priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
+            if(priceFloor == False):
+                break
 
 def main():
     global timeoutCounter, driver   # If this reaches 10, exit program
@@ -431,92 +507,8 @@ def main():
     if(pageToStart != 1):
         skipToPage(pageToStart, priceFloor, priceCeil)
 
-    reset = False
-    # Iterate through every card
-    while True:
-        # Check if range has more than 300 cards
-        tooManyCards = False
-        try:
-            driver.find_element(By.XPATH, "/html/body/main/div[4]/small")
-            table = "/html/body/main/div[6]"
-            tooManyCards = True
-        except:
-            table = "/html/body/main/div[5]"
-
-        table += "/div[2]/div"
-        cards = driver.find_elements(By.XPATH, table)
-        cardsMoved = 0
-        slowdown = random.randint(1, 5)
-        numCards = 0    # count how many cards were checked
-        for card in cards:
-            if HandleCard(driver, card, priceFloor, priceCeil):
-                reset = True
-                break
-
-            numCards = numCards + 1
-            if(numCards >= slowdown):   # slow down because of rate limiting
-                time.sleep(random.uniform(4, 10))
-                slowdown = random.randint(1, 5)
-                numCards = 0
-
-        if reset:
-            break
-
-        # * This method will eventually check cards that were already checked. Still, better to check twice than none. It may also happen that it doesn't check enough cards, still better than checking none
-        check = cardsMoved
-        while(cardsMoved != 0):
-            # Refresh page and check cards that underflew to this page (cardsMoved)
-            driver.refresh()
-            time.sleep(random.uniform(2, 5)) # Prevent false positive and rate limiting
-            while True:
-                if WaitForPage(table, driver):
-                    if (timeoutCounter == 10):
-                        logging.warning(f"Timeout while refreshing page")
-                        now = datetime.now()
-                        finishingTime = now.strftime("%Y/%m/%d %H:%M:%S")
-                        logging.info(f"Finished review at {finishingTime} - Net change is {round(netChange, 2)}")
-                        driver.quit()
-                        quit()
-                    driver.refresh()
-                    continue
-                break
-
-            # Check if range has more than 300 cards
-            tooManyCards = False
-            try:
-                driver.find_element(By.XPATH, "/html/body/main/div[4]/small")
-                table = "/html/body/main/div[6]"
-                tooManyCards = True
-            except:
-                table = "/html/body/main/div[5]"
-
-            table += "/div[2]/div"
-
-            cards = driver.find_elements(By.XPATH, table)
-            check = cardsMoved
-            cardsMoved = 0
-            for iter, card in enumerate(reversed(cards)):
-                if HandleCard(driver, card, priceFloor, priceCeil):
-                    reset = True
-                    break
-                
-                if(iter == check - 1):
-                    break
-
-        # Check if there's another page
-        if not tooManyCards:
-            skipButton = "/html/body/main/div[4]/div[2]/div/a[2]"
-        else:
-            skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
-
-        try:
-            driver.find_element(By.XPATH, skipButton).click()
-            time.sleep(random.uniform(2, 5)) # Prevent false positive
-            WaitForPage(table, driver)
-        except: # No more pages, change price range
-            priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
-            if(priceFloor == False):
-                break
+    #* Iterate through every card
+    iterateCards(driver, priceFloor, priceCeil)
             
     now = datetime.now()
     finishingTime = now.strftime("%Y/%m/%d %H:%M:%S")
