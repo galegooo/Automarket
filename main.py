@@ -339,6 +339,8 @@ def skipToPage(page, priceFloor, priceCeil):
         break
 
 def iterateCards(driver, priceFloor, priceCeil):
+    global cardsMoved # To make sure every card is seen
+
     while True:
         # Check if range has more than 300 cards
         tooManyCards = False
@@ -480,9 +482,6 @@ def main():
     global netChange, stageChange
     netChange = 0
     stageChange = 0
-
-    # To make sure every card is seen
-    global cardsMoved
 
     #logging.info("going to log in")
     if LogIn(driver):
