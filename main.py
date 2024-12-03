@@ -188,9 +188,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
 
             logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}; from is {priceFrom}")
             priceDiff = abs(newSellPrice - sellPrice)
-            percentageChange = round(priceDiff / sellPrice, 2)
+            percentageChange = priceDiff / sellPrice
             if(percentageChange > 0.25 and priceDiff >= 0.1):   
-                logging.info(f"^^^^CHANGED {percentageChange * 100}%^^^^")
+                logging.info(f"^^^^CHANGED {round(percentageChange * 100, 2)}%^^^^")
                 
             # Update net and stage change
             netChange = netChange + (newSellPrice - sellPrice)
