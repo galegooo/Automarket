@@ -294,9 +294,9 @@ def changePriceRange(priceFloor, driver, priceCeil):
         
     if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
         return False, False
-    priceFloor, priceCeil = checkForMaxRange(driver, priceFloor, priceCeil)
+    priceFloor, priceCeil, cardsInRange = checkForMaxRange(driver, priceFloor, priceCeil)
 
-    return priceFloor, priceCeil
+    return priceFloor, priceCeil, cardsInRange
 
 def handler(signum, frame):
     logging.warning(f"User terminated program - Net change is {round(netChange, 2)}")
@@ -321,7 +321,7 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
             logging.info(f"\tRange has {range} cards")
             break
 
-    return priceFloor, priceCeil
+    return priceFloor, priceCeil, range
 
 def skipToPage(page, priceFloor, priceCeil):
     logging.info(f"Skipping to page {page}")
@@ -340,7 +340,7 @@ def skipToPage(page, priceFloor, priceCeil):
             continue
         break
 
-def iterateCards(driver, priceFloor, priceCeil):
+def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
     global cardsMoved # To make sure every card is seen
 
     while True:
@@ -357,16 +357,19 @@ def iterateCards(driver, priceFloor, priceCeil):
         cards = driver.find_elements(By.XPATH, table)
         cardsMoved = 0
         slowdown = random.randint(1, 5)
-        numCards = 0    # count how many cards were checked
+        cardsUntilSlowdown = 0    # count how many cards were checked to trigger slowdown
+        totalCardsChecked = 0
         for card in cards:
             if HandleCard(driver, card, priceFloor, priceCeil): # if this returns true, something went wrong
                 return
 
-            numCards = numCards + 1
-            if(numCards >= slowdown):   # slow down because of rate limiting
+            cardsUntilSlowdown = cardsUntilSlowdown + 1
+            if(cardsUntilSlowdown >= slowdown):   # slow down because of rate limiting
                 time.sleep(random.uniform(4, 10))
                 slowdown = random.randint(1, 5)
-                numCards = 0
+                cardsUntilSlowdown = 0
+
+            totalCardsChecked = totalCardsChecked + 1
 
         # * This method will eventually check cards that were already checked. Still, better to check twice than none. It may also happen that it doesn't check enough cards, still better than checking none
         check = cardsMoved
@@ -401,6 +404,8 @@ def iterateCards(driver, priceFloor, priceCeil):
                 if HandleCard(driver, card, priceFloor, priceCeil):
                     return
                 
+                totalCardsChecked = totalCardsChecked + 1
+
                 if(iter == check - 1):
                     break
 
@@ -415,9 +420,11 @@ def iterateCards(driver, priceFloor, priceCeil):
             time.sleep(random.uniform(2, 5)) # Prevent false positive
             WaitForPage(table, driver)
         except: # No more pages, change price range
-            priceFloor, priceCeil = changePriceRange(priceFloor, driver, priceCeil)
+            logging.warning(f"Finished range - Range had {cardsInRange} cards, checked {totalCardsChecked}")
+            totalCardsChecked = 0
+            priceFloor, priceCeil, cardsInRange = changePriceRange(priceFloor, driver, priceCeil)
             if(priceFloor == False):
-                break
+                break   # end
 
 def main():
     global timeoutCounter, driver   # If this reaches 10, exit program
@@ -480,7 +487,7 @@ def main():
         logging.info(e)
         exit(1)
 
-    # Show overall change in the end
+    # To show overall change in the end
     global netChange, stageChange
     netChange = 0
     stageChange = 0
@@ -500,7 +507,7 @@ def main():
     if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
         driver.quit()
         quit()
-    priceFloor, priceCeil = checkForMaxRange(driver, priceFloor, priceCeil)
+    priceFloor, priceCeil, cardsInRange = checkForMaxRange(driver, priceFloor, priceCeil)
     if(priceFloor == False and priceCeil == False):
         driver.quit()
         quit()
@@ -509,7 +516,7 @@ def main():
         skipToPage(pageToStart, priceFloor, priceCeil)
 
     #* Iterate through every card
-    iterateCards(driver, priceFloor, priceCeil)
+    iterateCards(driver, priceFloor, priceCeil, cardsInRange)
             
     now = datetime.now()
     finishingTime = now.strftime("%Y/%m/%d %H:%M:%S")
