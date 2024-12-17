@@ -370,6 +370,7 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
                 cardsUntilSlowdown = 0
 
             totalCardsChecked = totalCardsChecked + 1
+            logging.warning(f"totalCardsChecked is at {totalCardsChecked}")
 
         # * This method will eventually check cards that were already checked. Still, better to check twice than none. It may also happen that it doesn't check enough cards, still better than checking none
         check = cardsMoved
@@ -405,7 +406,7 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
                     return
                 
                 totalCardsChecked = totalCardsChecked + 1
-
+                logging.warning(f"totalCardsChecked is at {totalCardsChecked}")
                 if(iter == check - 1):
                     break
 
@@ -421,7 +422,6 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
             WaitForPage(table, driver)
         except: # No more pages, change price range
             logging.warning(f"Finished range - Range had {cardsInRange} cards, checked {totalCardsChecked}")
-            totalCardsChecked = 0
             priceFloor, priceCeil, cardsInRange = changePriceRange(priceFloor, driver, priceCeil)
             if(priceFloor == False):
                 break   # end
