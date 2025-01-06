@@ -420,6 +420,7 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
             WaitForPage(table, driver)
         except: # No more pages, change price range
             logging.warning(f"Finished range - Range had {cardsInRange} cards, checked {totalCardsChecked}")
+            totalCardsChecked = 0
             priceFloor, priceCeil, cardsInRange = changePriceRange(priceFloor, driver, priceCeil)
             if(priceFloor == False):
                 break   # end
