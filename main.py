@@ -343,7 +343,6 @@ def skipToPage(page, priceFloor, priceCeil):
 def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
     global cardsMoved # To make sure every card is seen
 
-    totalCardsChecked = 0
     while True:
         # Check if range has more than 300 cards
         tooManyCards = False
@@ -369,7 +368,6 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
                 slowdown = random.randint(1, 5)
                 cardsUntilSlowdown = 0
 
-            totalCardsChecked = totalCardsChecked + 1
 
         # * This method will eventually check cards that were already checked. Still, better to check twice than none. It may also happen that it doesn't check enough cards, still better than checking none
         check = cardsMoved
@@ -404,7 +402,6 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
                 if HandleCard(driver, card, priceFloor, priceCeil):
                     return
                 
-                totalCardsChecked = totalCardsChecked + 1
                 if(iter == check - 1):
                     break
 
@@ -419,8 +416,6 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
             time.sleep(random.uniform(2, 5)) # Prevent false positive
             WaitForPage(table, driver)
         except: # No more pages, change price range
-            logging.warning(f"Finished range - Range had {cardsInRange} cards, checked {totalCardsChecked}")
-            totalCardsChecked = 0
             priceFloor, priceCeil, cardsInRange = changePriceRange(priceFloor, driver, priceCeil)
             if(priceFloor == False):
                 break   # end
