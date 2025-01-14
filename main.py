@@ -287,13 +287,13 @@ def changePriceRange(priceFloor, driver, priceCeil):
 
     priceCeil = round(priceFloor - 0.01, 2)
     priceFloor = round(priceFloor - 0.2 * priceFloor, 2)
-    if(priceFloor < 0):
-        return False, False
+    if(priceFloor <= 0):
+        return False, False, False
     elif(priceFloor > priceCeil):
         priceFloor = priceCeil
         
     if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
-        return False, False
+        return False, False, False
     priceFloor, priceCeil, cardsInRange = checkForMaxRange(driver, priceFloor, priceCeil)
 
     return priceFloor, priceCeil, cardsInRange
