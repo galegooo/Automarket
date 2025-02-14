@@ -16,6 +16,7 @@ from selenium_stealth import stealth
 from dotenv import load_dotenv
 
 
+#? selenium funcions
 def WaitForPage(element, driver):
     global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
 
@@ -29,38 +30,119 @@ def WaitForPage(element, driver):
     timeoutCounter = 0
     return False
 
-def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main/div[6/5(depends on if page is at max card count)]/div[2]/div[*]
-    global netChange, stageChange, cardsMoved, timeoutCounter
+def handler(signum, frame):
+    logging.warning(f"User terminated program - Net change is {round(netChange, 2)}")
+    driver.quit()
+    quit()
 
-    counter = 0
+
+#? Interaction with website
+def LogIn(driver):
+    global username, password
+
+    # Open the webpage and wait for it to load
+    driver.get(os.getenv("URL"))
     while True:
-        # Get card page link and open in a new tab
-        try:
-            cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
-        except:
-            logging.warning(f"Couldn't get name of card {card}")
-            timeoutCounter += 1
-            if(timeoutCounter == 10):
-                return True
-            return False
-        
-        cardName = cardLink.split('/')[-1]
+      if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver):
+        if (timeoutCounter == 10):
+          logging.warning(f"Timeout while loading webpage")
+          return True
+        continue
+      break
 
-        # Check if cardName has "isFoil=Y". If so, something went wrong
-        if("isFoil=Y" in cardName):
-            counter += 1
-            if(counter == 10):
-                return True
-            driver.refresh()
+    #logging.info("page is opened")
+    # Accept cookies (this takes care of future problems)
+    try:
+        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/div/button").click()
+    except:
+        pass
+
+    # Log in
+    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[1]/div/input").send_keys(username)
+    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[2]/div/input").send_keys(password)
+    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/input[3]").click()
+    
+    # Wait until page is loaded
+    WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
+    #logging.info("Logged in")
+
+def changePriceRange(priceFloor, driver, priceCeil):
+    global stageChange, netChange
+
+    logging.info(f"\tFinished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
+    stageChange = 0
+
+    priceCeil = round(priceFloor - 0.01, 2)
+    priceFloor = round(priceFloor - 0.2 * priceFloor, 2)
+    if(priceFloor <= 0):
+        return False, False, False
+    elif(priceFloor > priceCeil):
+        priceFloor = priceCeil
+        
+    setPriceRange(driver, priceFloor, priceCeil)
+    cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
+    while(cardnumber == 300):
+        if(priceFloor != priceCeil):
+            priceFloor = round(priceFloor + 0.01, 2)
+            setPriceRange(driver, priceFloor, priceCeil)
+            cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
         else:
             break
+
+    return priceFloor, priceCeil, cardnumber
+
+def checkForMaxRange(driver, priceFloor, priceCeil):
+    # Check if price range has more than 300 cards
+    try:
+        driver.find_element(By.XPATH, "/html/body/main/div[3]/div[2]/div[1]/small")
+        logging.warning("\tRange has 300+ cards")
+        return 300
+    except:
+        range = driver.find_element(By.XPATH, "/html/body/main/div[3]/div[2]/div[1]/div[1]/span/span[1]").text
+        logging.info(f"\tRange has {range} cards")
+        return range
+
+def skipToPage(page, priceFloor, priceCeil):
+    logging.info(f"Skipping to page {page}")
+    
+    URLaddon = f"?minPrice={priceFloor}&maxPrice={priceCeil}&site={page}"
+    link = os.getenv("URL") + "/Stock/Offers/Singles" + URLaddon
+    driver.get(link)
+
+    while True:
+        if WaitForPage("/html/body/main/div[6]/div[2]", driver):
+            if (timeoutCounter == 10):
+                logging.warning("Timeout on changing price range")
+                driver.quit()
+                return True
+            driver.refresh()
+            continue
+        break
+
+
+#? Algorithm functions
+def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main/div[3]/div[2]/div[2/3]/div[2]/div[*]
+    global netChange, stageChange, cardsMoved, timeoutCounter
+
+    # Get card page link and open in a new tab
+    try:
+        cardLink = card.find_element(By.XPATH, ".//div[3]/div/div[1]/a").get_attribute("href")
+    except:
+        logging.warning(f"Couldn't get name of card {card}")
+        return True
+    
+    cardName = cardLink.split('/')[-1]
+
+    # Check if cardName has "isFoil=Y". If so, something went wrong
+    if("isFoil=Y" in cardName):
+        return True
 
     logging.info(f"Checking {cardName}")    
     
     #time.sleep(random.uniform(0.5, 1))   # Avoid rate limiting
     driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[1])
-    driver.get(cardLink)
+    driver.get(cardLink)    #! how is this working? not specifing website
 
     while True:
         if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
@@ -186,7 +268,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
                 driver.refresh()    
                 continue
 
-            logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}; from is {priceFrom}")
+            logging.info(f"\tChanged from {sellPrice} to {newSellPrice} - trend is {priceTrend}")
             priceDiff = abs(newSellPrice - sellPrice)
             percentageChange = priceDiff / sellPrice
             if(percentageChange > 0.25 and priceDiff >= 0.1):   
@@ -222,40 +304,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
     driver.switch_to.window(driver.window_handles[0])
     return False
         
-def LogIn(driver):
-    global username, password
-
-    # Open the webpage and wait for it to load
-    driver.get(os.getenv("URL"))
-    while True:
-      if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver):
-        if (timeoutCounter == 10):
-          logging.warning(f"Timeout while loading webpage")
-          return True
-        continue
-      break
-
-    #logging.info("page is opened")
-    # Accept cookies (this takes care of future problems)
-    try:
-        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/div/button").click()
-    except:
-        pass
-
-    # Log in
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[1]/div/input").send_keys(username)
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[2]/div/input").send_keys(password)
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/input[3]").click()
-    
-    # Wait until page is loaded
-    WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
-    #logging.info("Logged in")
-
-    # Open active listings ! no longer needed, just straight to startingPrice
-    #listingsLink = os.getenv("URL") + "/Stock/Offers/Singles"
-    #driver.get(listingsLink)
-    #WaitForPage("/html/body/main/div[7]/div[2]/div[1]/div[3]/div/div[1]/a", driver)
-
 def setPriceRange(driver, price, priceCeil):
     # Filter by price
     URLaddon = f"?minPrice={price}&maxPrice={priceCeil}"
@@ -268,93 +316,32 @@ def setPriceRange(driver, price, priceCeil):
         logging.info(f"---->Checking {price}")
 
     while True:
-        if WaitForPage("/html/body/main/div[6]/div[2]", driver):
+        if WaitForPage("/html/body/main/div[2]/div/h1", driver):
             if (timeoutCounter == 10):
                 logging.warning("Timeout on changing price range")
                 driver.quit()
-                return True
+                quit()
             driver.refresh()
             continue
         break
 
     return False
 
-def changePriceRange(priceFloor, driver, priceCeil):
-    global stageChange, netChange
-
-    logging.info(f"\tFinished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
-    stageChange = 0
-
-    priceCeil = round(priceFloor - 0.01, 2)
-    priceFloor = round(priceFloor - 0.2 * priceFloor, 2)
-    if(priceFloor <= 0):
-        return False, False, False
-    elif(priceFloor > priceCeil):
-        priceFloor = priceCeil
-        
-    if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
-        return False, False, False
-    priceFloor, priceCeil, cardsInRange = checkForMaxRange(driver, priceFloor, priceCeil)
-
-    return priceFloor, priceCeil, cardsInRange
-
-def handler(signum, frame):
-    logging.warning(f"User terminated program - Net change is {round(netChange, 2)}")
-    driver.quit()
-    quit()
-     
-def checkForMaxRange(driver, priceFloor, priceCeil):
-    while True:
-        # Check if price range has more than 300 cards
-        try:
-            driver.find_element(By.XPATH, "/html/body/main/div[4]/small")
-            logging.warning("Range has 300+ cards")
-            # If program reaches here, too many cards. Try to change price range
-            if(priceFloor != priceCeil):
-                priceFloor = round(priceFloor + 0.01, 2)
-                if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
-                    return False, False
-            else:
-                break
-        except:
-            range = driver.find_element(By.XPATH, "/html/body/main/div[4]/div[1]/span/span[1]").text
-            logging.info(f"\tRange has {range} cards")
-            break
-
-    return priceFloor, priceCeil, range
-
-def skipToPage(page, priceFloor, priceCeil):
-    logging.info(f"Skipping to page {page}")
-    
-    URLaddon = f"?minPrice={priceFloor}&maxPrice={priceCeil}&site={page}"
-    link = os.getenv("URL") + "/Stock/Offers/Singles" + URLaddon
-    driver.get(link)
-
-    while True:
-        if WaitForPage("/html/body/main/div[6]/div[2]", driver):
-            if (timeoutCounter == 10):
-                logging.warning("Timeout on changing price range")
-                driver.quit()
-                return True
-            driver.refresh()
-            continue
-        break
-
 def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
     global cardsMoved # To make sure every card is seen
 
     while True:
-        # Check if range has more than 300 cards
-        tooManyCards = False
-        try:
-            driver.find_element(By.XPATH, "/html/body/main/div[4]/small")
-            table = "/html/body/main/div[6]"
+        #? this check is necessary for when priceCeil == priceFloor && more than 300 cards
+        cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
+        if(cardnumber == 300):
             tooManyCards = True
-        except:
-            table = "/html/body/main/div[5]"
+            table = "/html/body/main/div[3]/div[2]/div[3]/div[2]"
+        else:
+            tooManyCards = False
+            table = "/html/body/main/div[3]/div[2]/div[2]/div[2]"       
 
-        table += "/div[2]/div"
-        cards = driver.find_elements(By.XPATH, table)
+        cardsintable = table + "/div"
+        cards = driver.find_elements(By.XPATH, cardsintable)
         cardsMoved = 0
         slowdown = random.randint(1, 5)
         cardsUntilSlowdown = 0    # count how many cards were checked to trigger slowdown
@@ -384,18 +371,16 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
                     continue
                 break
 
-            # Check if range has more than 300 cards
-            tooManyCards = False
-            try:
-                driver.find_element(By.XPATH, "/html/body/main/div[4]/small")
-                table = "/html/body/main/div[6]"
+            cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
+            if(cardnumber == 300):
                 tooManyCards = True
-            except:
-                table = "/html/body/main/div[5]"
+                table = "/html/body/main/div[3]/div[2]/div[3]/div[2]"
+            else:
+                tooManyCards = False
+                table = "/html/body/main/div[3]/div[2]/div[2]/div[2]"  
 
-            table += "/div[2]/div"
-
-            cards = driver.find_elements(By.XPATH, table)
+            cardsintable = table + "/div"
+            cards = driver.find_elements(By.XPATH, cardsintable)
             check = cardsMoved
             cardsMoved = 0
             for iter, card in enumerate(reversed(cards)):
@@ -407,9 +392,9 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
 
         # Check if there's another page
         if not tooManyCards:
-            skipButton = "/html/body/main/div[4]/div[2]/div/a[2]"
+            skipButton = "/html/body/main/div[3]/div[2]/div[1]/div[2]/div/a[2]"
         else:
-            skipButton = "/html/body/main/div[5]/div[2]/div/a[2]"
+            skipButton = "/html/body/main/div[3]/div[2]/div[2]/div[2]/div/a[2]"
 
         try:
             driver.find_element(By.XPATH, skipButton).click()
@@ -420,6 +405,8 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
             if(priceFloor == False):
                 break   # end
 
+
+#? main
 def main():
     global timeoutCounter, driver   # If this reaches 10, exit program
     timeoutCounter = 0
@@ -498,25 +485,28 @@ def main():
     elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards): priceFloor = priceCeil
         priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
-    if(setPriceRange(driver, priceFloor, priceCeil)):   #timeout
-        driver.quit()
-        quit()
-    priceFloor, priceCeil, cardsInRange = checkForMaxRange(driver, priceFloor, priceCeil)
-    if(priceFloor == False and priceCeil == False):
-        driver.quit()
-        quit()
+    setPriceRange(driver, priceFloor, priceCeil)
+    cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
+    while(cardnumber == 300):
+        if(priceFloor != priceCeil):
+            priceFloor = round(priceFloor + 0.01, 2)
+            setPriceRange(driver, priceFloor, priceCeil)
+            cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
+        else:
+            break
 
     if(pageToStart != 1):
         skipToPage(pageToStart, priceFloor, priceCeil)
 
     #* Iterate through every card
-    iterateCards(driver, priceFloor, priceCeil, cardsInRange)
+    iterateCards(driver, priceFloor, priceCeil, cardnumber)
             
     now = datetime.now()
     finishingTime = now.strftime("%Y/%m/%d %H:%M:%S")
     logging.info(f"Finished review at {finishingTime} - Net change is {round(netChange, 2)}")
     driver.quit()
     quit()
+
 
 if(__name__ == "__main__"):
     main()
