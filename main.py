@@ -95,11 +95,9 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
     # Check if price range has more than 300 cards
     try:
         driver.find_element(By.XPATH, "/html/body/main/div[3]/div[2]/div[1]/small")
-        logging.warning("\tRange has 300+ cards")
         return 300
     except:
         range = driver.find_element(By.XPATH, "/html/body/main/div[3]/div[2]/div[1]/div[1]/span/span[1]").text
-        logging.info(f"\tRange has {range} cards")
         return range
 
 def skipToPage(page, priceFloor, priceCeil):
@@ -334,9 +332,11 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
         #? this check is necessary for when priceCeil == priceFloor && more than 300 cards
         cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
         if(cardnumber == 300):
+            logging.info(f"\tRange has 300+ cards")
             tooManyCards = True
             table = "/html/body/main/div[3]/div[2]/div[3]/div[2]"
         else:
+            logging.info(f"\tRange has {cardnumber} cards")
             tooManyCards = False
             table = "/html/body/main/div[3]/div[2]/div[2]/div[2]"       
 
@@ -373,9 +373,11 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
 
             cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
             if(cardnumber == 300):
+                logging.info(f"\tRange has 300+ cards")
                 tooManyCards = True
                 table = "/html/body/main/div[3]/div[2]/div[3]/div[2]"
             else:
+                logging.info(f"\tRange has {cardnumber} cards")
                 tooManyCards = False
                 table = "/html/body/main/div[3]/div[2]/div[2]/div[2]"  
 
