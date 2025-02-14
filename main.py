@@ -373,11 +373,9 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
 
             cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
             if(cardnumber == 300):
-                logging.info(f"\tRange has 300+ cards")
                 tooManyCards = True
                 table = "/html/body/main/div[3]/div[2]/div[3]/div[2]"
             else:
-                logging.info(f"\tRange has {cardnumber} cards")
                 tooManyCards = False
                 table = "/html/body/main/div[3]/div[2]/div[2]/div[2]"  
 
