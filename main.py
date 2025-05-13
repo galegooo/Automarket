@@ -16,6 +16,25 @@ from selenium_stealth import stealth
 from dotenv import load_dotenv
 
 
+#? Misc.
+def selectTCG():
+    # check previous TCG
+    previousTCG = os.getenv("TCG")
+    
+    # select new one
+    if(previousTCG == "Magic"):
+        TCG = "Pokemon"
+    elif(previousTCG == "Pokemon"):
+        TCG = "YuGiOh"
+    elif(previousTCG == "YuGiOh"):
+        TCG = "Magic"
+
+    # save current TCG
+    set_key(dotenv_path=".env", key_to_set="TCG", value_to_set=TCG)
+
+    return TCG
+
+
 #? selenium funcions
 def WaitForPage(element, driver):
     global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
@@ -37,11 +56,12 @@ def handler(signum, frame):
 
 
 #? Interaction with website
-def LogIn(driver):
+def LogIn(driver, TCG):
     global username, password
 
     # Open the webpage and wait for it to load
-    driver.get(os.getenv("URL"))
+    URL = os.getenv("URL") + TCG
+    driver.get(URL)
     while True:
       if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver):
         if (timeoutCounter == 10):
@@ -66,7 +86,7 @@ def LogIn(driver):
     WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
     #logging.info("Logged in")
 
-def changePriceRange(priceFloor, driver, priceCeil):
+def changePriceRange(priceFloor, driver, priceCeil, TCG):
     global stageChange, netChange
 
     logging.info(f"\tFinished range - Range change is {round(stageChange, 2)}; Net change is {round(netChange, 2)}")
@@ -79,12 +99,12 @@ def changePriceRange(priceFloor, driver, priceCeil):
     elif(priceFloor > priceCeil):
         priceFloor = priceCeil
         
-    setPriceRange(driver, priceFloor, priceCeil)
+    setPriceRange(driver, priceFloor, priceCeil, TCG)
     cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
     while(cardnumber == 300):
         if(priceFloor != priceCeil):
             priceFloor = round(priceFloor + 0.01, 2)
-            setPriceRange(driver, priceFloor, priceCeil)
+            setPriceRange(driver, priceFloor, priceCeil, TCG)
             cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
         else:
             break
@@ -100,11 +120,11 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
         range = driver.find_element(By.XPATH, "/html/body/main/div[3]/div[2]/div[1]/div[1]/span/span[1]").text
         return range
 
-def skipToPage(page, priceFloor, priceCeil):
+def skipToPage(page, priceFloor, priceCeil, TCG):
     logging.info(f"Skipping to page {page}")
     
     URLaddon = f"?minPrice={priceFloor}&maxPrice={priceCeil}&site={page}"
-    link = os.getenv("URL") + "/Stock/Offers/Singles" + URLaddon
+    link = os.getenv("URL") + TCG + "/Stock/Offers/Singles" + URLaddon
     driver.get(link)
 
     while True:
@@ -302,10 +322,10 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
     driver.switch_to.window(driver.window_handles[0])
     return False
         
-def setPriceRange(driver, price, priceCeil):
+def setPriceRange(driver, price, priceCeil, TCG):
     # Filter by price
     URLaddon = f"?minPrice={price}&maxPrice={priceCeil}"
-    link = os.getenv("URL") + "/Stock/Offers/Singles" + URLaddon
+    link = os.getenv("URL") + TCG + "/Stock/Offers/Singles" + URLaddon
     driver.get(link)
 
     if(price != priceCeil):
@@ -325,7 +345,7 @@ def setPriceRange(driver, price, priceCeil):
 
     return False
 
-def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
+def iterateCards(driver, priceFloor, priceCeil, cardsInRange, TCG):
     global cardsMoved # To make sure every card is seen
 
     while True:
@@ -401,7 +421,7 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange):
             time.sleep(random.uniform(2, 5)) # Prevent false positive
             WaitForPage(table, driver)
         except: # No more pages, change price range
-            priceFloor, priceCeil, cardsInRange = changePriceRange(priceFloor, driver, priceCeil)
+            priceFloor, priceCeil, cardsInRange = changePriceRange(priceFloor, driver, priceCeil, TCG)
             if(priceFloor == False):
                 break   # end
 
@@ -437,6 +457,9 @@ def main():
     global username, password
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
+    
+    # Select TCG to check
+    TCG = selectTCG()
 
     # Setup browser options
     try:
@@ -474,7 +497,7 @@ def main():
     stageChange = 0
 
     #logging.info("going to log in")
-    if LogIn(driver):
+    if LogIn(driver, TCG):
       driver.quit()
       quit()
 
@@ -485,21 +508,21 @@ def main():
     elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards): priceFloor = priceCeil
         priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
-    setPriceRange(driver, priceFloor, priceCeil)
+    setPriceRange(driver, priceFloor, priceCeil, TCG)
     cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
     while(cardnumber == 300):
         if(priceFloor != priceCeil):
             priceFloor = round(priceFloor + 0.01, 2)
-            setPriceRange(driver, priceFloor, priceCeil)
+            setPriceRange(driver, priceFloor, priceCeil, TCG)
             cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
         else:
             break
 
     if(pageToStart != 1):
-        skipToPage(pageToStart, priceFloor, priceCeil)
+        skipToPage(pageToStart, priceFloor, priceCeil, TCG)
 
     #* Iterate through every card
-    iterateCards(driver, priceFloor, priceCeil, cardnumber)
+    iterateCards(driver, priceFloor, priceCeil, cardnumber, TCG)
             
     now = datetime.now()
     finishingTime = now.strftime("%Y/%m/%d %H:%M:%S")
