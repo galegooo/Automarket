@@ -32,6 +32,7 @@ def selectTCG():
     # save current TCG
     set_key(dotenv_path=".env", key_to_set="TCG", value_to_set=TCG)
 
+    logging.info(f"Reviewing {TCG} cards")
     return TCG
 
 
