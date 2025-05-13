@@ -13,7 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium_stealth import stealth
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 
 
 #? Misc.
