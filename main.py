@@ -353,7 +353,7 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange, TCG):
         #? this check is necessary for when priceCeil == priceFloor && more than 300 cards
         cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
         if(cardnumber == 300):
-            logging.info(f"\tRange has 300+ cards")
+            logging.info("\tRange has 300+ cards")
             tooManyCards = True
             table = "/html/body/main/div[3]/div[2]/div[3]/div[2]"
         else:
@@ -512,6 +512,7 @@ def main():
     setPriceRange(driver, priceFloor, priceCeil, TCG)
     cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
     while(cardnumber == 300):
+        logging.info("\tRange has 300+ cards")
         if(priceFloor != priceCeil):
             priceFloor = round(priceFloor + 0.01, 2)
             setPriceRange(driver, priceFloor, priceCeil, TCG)
