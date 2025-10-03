@@ -7,10 +7,10 @@ Tested in Ubuntu Server and Arch Linux.
 
 ## How to use it
 Create a .env in the same directory as main.py containing the following keywords:
-- LOGINUSER	= <your username>
-- PASSWORD	= <your password>
-- BROWSER	= <the absolute path to the browser executable>
-- LOGDIR	= <relative path to logs (leave empty for same directory as main.py)>
-- TCG		= <TCG that the program should work in>
+- LOGINUSER	= \<your username\>
+- PASSWORD	= \<your password\>
+- BROWSER	= \<the absolute path to the browser executable\>
+- LOGDIR	= \<relative path to logs (leave empty for same directory as main.py)\>
+- TCG		= \<TCG that the program should work in\>
 
 Then run `python main.py <value to start in>`

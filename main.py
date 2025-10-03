@@ -448,7 +448,7 @@ def main():
     # Set up logging
     now = datetime.now()
     logDir = str(os.getenv("LOGDIR"))
-    filename = now.strftime(logDir + "/%Y%m%d_%H%M%S")
+    filename = now.strftime(logDir + "%Y%m%d_%H%M%S")
     logging.basicConfig(filename = filename, encoding = "utf-8", level = logging.INFO)
     startingTime = now.strftime("%Y/%m/%d %H:%M:%S")
     logging.info(f"Starting review at {startingTime}")
