@@ -58,10 +58,10 @@ def handler(signum, frame):
 
 #? Interaction with website
 def LogIn(driver, TCG):
-    global username, password
+    global username, password, cardmarketURL
 
     # Open the webpage and wait for it to load
-    URL = os.getenv("URL") + TCG
+    URL = cardmarketURL + TCG
     driver.get(URL)
     while True:
       if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver):
@@ -122,10 +122,12 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
         return range
 
 def skipToPage(page, priceFloor, priceCeil, TCG):
+    global cardmarketURL
+
     logging.info(f"Skipping to page {page}")
     
     URLaddon = f"?minPrice={priceFloor}&maxPrice={priceCeil}&site={page}"
-    link = os.getenv("URL") + TCG + "/Stock/Offers/Singles" + URLaddon
+    link = cardmarketURL + TCG + "/Stock/Offers/Singles" + URLaddon
     driver.get(link)
 
     while True:
@@ -324,9 +326,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
     return False
         
 def setPriceRange(driver, price, priceCeil, TCG):
+    global cardmarketURL
+
     # Filter by price
     URLaddon = f"?minPrice={price}&maxPrice={priceCeil}"
-    link = os.getenv("URL") + TCG + "/Stock/Offers/Singles" + URLaddon
+    link = cardmarketURL + TCG + "/Stock/Offers/Singles" + URLaddon
     driver.get(link)
 
     if(price != priceCeil):
@@ -458,7 +462,8 @@ def main():
     elif(len(sys.argv) == 2):
         priceToStart = float(sys.argv[1])
 
-    global username, password
+    global username, password, cardmarketURL
+    cardmarketURL = "https://www.cardmarket.com/en/"
     username = os.getenv("LOGINUSER")
     password = os.getenv("PASSWORD")
     
