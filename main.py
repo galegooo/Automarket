@@ -348,6 +348,7 @@ def setPriceRange(driver, price, priceCeil, TCG):
 
 def iterateCards(driver, priceFloor, priceCeil, cardsInRange, TCG):
     global cardsMoved # To make sure every card is seen
+    firstPage = True
 
     while True:
         #? this check is necessary for when priceCeil == priceFloor && more than 300 cards
@@ -357,7 +358,8 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange, TCG):
             tooManyCards = True
             table = "/html/body/main/div[3]/div[2]/div[3]/div[2]"
         else:
-            logging.info(f"\tRange has {cardnumber} cards")
+            if(firstPage):
+                logging.info(f"\tRange has {cardnumber} cards")
             tooManyCards = False
             table = "/html/body/main/div[3]/div[2]/div[2]/div[2]"       
 
@@ -420,6 +422,7 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange, TCG):
         try:
             driver.find_element(By.XPATH, skipButton).click()
             time.sleep(random.uniform(2, 5)) # Prevent false positive
+            firstPage = False
             WaitForPage(table, driver)
         except: # No more pages, change price range
             priceFloor, priceCeil, cardsInRange = changePriceRange(priceFloor, driver, priceCeil, TCG)
@@ -441,7 +444,7 @@ def main():
     # Set up logging
     now = datetime.now()
     logDir = str(os.getenv("LOGDIR"))
-    filename = now.strftime(logDir + "%Y%m%d_%H%M%S")
+    filename = now.strftime(logDir + "/%Y%m%d_%H%M%S")
     logging.basicConfig(filename = filename, encoding = "utf-8", level = logging.INFO)
     startingTime = now.strftime("%Y/%m/%d %H:%M:%S")
     logging.info(f"Starting review at {startingTime}")
@@ -488,8 +491,7 @@ def main():
         stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
         #logging.info("set")
     except Exception as e:
-        print("got an error ->", e)
-        logging.info(e)
+        logging.error(e)
         exit(1)
 
     # To show overall change in the end
