@@ -37,10 +37,10 @@ def selectTCG():
 
 
 #? selenium funcions
-def WaitForPage(element, driver):
+def WaitForPage(element, driver, minWait, maxWait):
     global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
 
-    wait = random.uniform(3, 9) # random wait
+    wait = random.uniform(minWait, maxWait) # random wait
     try:
         WebDriverWait(driver, wait).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
@@ -64,7 +64,7 @@ def LogIn(driver, TCG):
     URL = cardmarketURL + TCG
     driver.get(URL)
     while True:
-      if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver):
+      if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver, 2, 5):
         if (timeoutCounter == 10):
           logging.warning(f"Timeout while loading webpage")
           return True
@@ -85,7 +85,7 @@ def LogIn(driver, TCG):
     
     # Wait until page is loaded
     while True:
-        if WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver):
+        if WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver, 2, 5):
             if (timeoutCounter == 10):
                 logging.warning("Timeout on changing price range")
                 driver.quit()
@@ -140,7 +140,7 @@ def skipToPage(page, priceFloor, priceCeil, TCG):
     driver.get(link)
 
     while True:
-        if WaitForPage("/html/body/main/div[6]/div[2]", driver):
+        if WaitForPage("/html/body/main/div[6]/div[2]", driver, 2, 5):
             if (timeoutCounter == 10):
                 logging.warning("Timeout on changing price range")
                 driver.quit()
@@ -175,7 +175,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
     driver.get(cardLink)    #! how is this working? not specifing website
 
     while True:
-        if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
+        if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver, 2, 5):
             if (timeoutCounter == 10):
                 logging.warning(f"Timeout while opening tab for card {cardName}")
                 return True
@@ -219,7 +219,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
                 driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 while True:
-                    if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
+                    if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver, 2, 5):
                         if (timeoutCounter == 10):
                             logging.warning(f"Timeout on changing card {cardName} to foil")
                             return True
@@ -275,7 +275,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
         if(sellPrice != newSellPrice):  # Values are different, change current sell price
             driver.find_element(By.XPATH, f"/html/body/main/div[3]/section[5]/div/div[2]/div[{numberOfCard}]/div[3]/div[3]/div[2]").click()
 
-            if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver):
+            if WaitForPage("/html/body/div[3]/div/div/div[2]/div/form/div[5]", driver, 2, 5):
                 if (timeoutCounter == 10):
                     logging.warning(f"Timeout on opening window to change card {cardName} price")
                     return True
@@ -289,7 +289,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
             fields[-1].find_element(By.XPATH, ".//button").click()
             
             # Wait for confirmation
-            if WaitForPage("/html/body/main/div[1]/div", driver):
+            if WaitForPage("/html/body/main/div[1]/div", driver, 2, 5):
                 localTimeoutCounter += 1
                 time.sleep(localTimeoutCounter * random.uniform(4, 10)) # incrementing wait
                 if(localTimeoutCounter == 10):
@@ -317,7 +317,7 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
                 driver.find_element(By.XPATH, "/html/body/main/div[3]/section[2]/div/div[2]/div[1]/div/div[1]/label/span[1]").click()
                 time.sleep(random.uniform(2, 3)) # Prevent false positive and rate limiting
                 while True:
-                    if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver):
+                    if WaitForPage("/html/body/main/div[2]/div[1]/h1", driver, 2, 5):
                         if (timeoutCounter == 10):
                             logging.warning(f"Timeout on reverting foil on card {cardName}")
                             return True
@@ -348,7 +348,7 @@ def setPriceRange(driver, price, priceCeil, TCG):
         logging.info(f"---->Checking {price}")
 
     while True:
-        if WaitForPage("/html/body/main/div[2]/div/h1", driver):
+        if WaitForPage("/html/body/main/div[2]/div/h1", driver, 10, 40):
             if (timeoutCounter == 10):
                 logging.warning("Timeout on changing price range")
                 driver.quit()
@@ -399,7 +399,7 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange, TCG):
             driver.refresh()
             time.sleep(random.uniform(2, 5)) # Prevent false positive and rate limiting
             while True:
-                if WaitForPage(table, driver):
+                if WaitForPage(table, driver, 2, 5):
                     if (timeoutCounter == 10):
                         logging.warning(f"Timeout while refreshing page")
                         return
@@ -436,7 +436,7 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange, TCG):
             driver.find_element(By.XPATH, skipButton).click()
             time.sleep(random.uniform(2, 5)) # Prevent false positive
             firstPage = False
-            WaitForPage(table, driver)
+            WaitForPage(table, driver, 2, 5)
         except: # No more pages, change price range
             priceFloor, priceCeil, cardsInRange = changePriceRange(priceFloor, driver, priceCeil, TCG)
             if(priceFloor == False):
