@@ -103,13 +103,13 @@ def changePriceRange(priceFloor, driver, priceCeil, TCG):
 
     return priceFloor, priceCeil, cardnumber
 
-def checkForMaxRange(driver, priceFloor, priceCeil):
+def checkForMaxRange(sb, priceFloor, priceCeil):
     # Check if price range has more than 300 cards
     try:
-        driver.find_element(By.XPATH, "/html/body/main/div[3]/div[2]/div[1]/small")
+        sb.find_element("/html/body/main/div[3]/div[2]/div[1]/small", by = "xpath")
         return 300
     except:
-        range = driver.find_element(By.XPATH, "/html/body/main/div[3]/div[2]/div[1]/div[1]/span/span[1]").text
+        range = sb.find_element("/html/body/main/div[3]/div[2]/div[1]/div[1]/span/span[1]", by = "xpath").text
         return range
 
 def skipToPage(page, priceFloor, priceCeil, TCG):
@@ -467,7 +467,7 @@ def main():
         LogIn(sb, TCG)
 
         setPriceRange(sb, priceFloor, priceCeil, TCG)
-        cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
+        cardnumber = checkForMaxRange(sb, priceFloor, priceCeil)
         while(cardnumber == 300):
             logging.info("\tRange has 300+ cards")
             if(priceFloor != priceCeil):
