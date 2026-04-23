@@ -40,7 +40,7 @@ def selectTCG():
 def WaitForPage(element, driver):
     global timeoutCounter   # If this reaches MAXTIMEOUT, exit program
 
-    wait = random.uniform(5, 11) # random wait
+    wait = random.uniform(3, 9) # random wait
     try:
         WebDriverWait(driver, wait).until(EC.presence_of_element_located((By.XPATH, element)))
     except TimeoutException:
@@ -72,9 +72,9 @@ def LogIn(driver, TCG):
       break
 
     #logging.info("page is opened")
-    # Accept cookies (this takes care of future problems)
+    # Reject cookies (this takes care of future problems)
     try:
-        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/div/button").click()
+        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form[2]/div/button").click()
     except:
         pass
 
@@ -84,8 +84,17 @@ def LogIn(driver, TCG):
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/input[3]").click()
     
     # Wait until page is loaded
-    WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
-    #logging.info("Logged in")
+    while True:
+        if WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver):
+            if (timeoutCounter == 10):
+                logging.warning("Timeout on changing price range")
+                driver.quit()
+                quit()
+            driver.refresh()
+            continue
+        break
+
+    logging.info("Logged in")
 
 def changePriceRange(priceFloor, driver, priceCeil, TCG):
     global stageChange, netChange
@@ -504,17 +513,17 @@ def main():
     netChange = 0
     stageChange = 0
 
-    #logging.info("going to log in")
-    if LogIn(driver, TCG):
-      driver.quit()
-      quit()
-
     priceFloor = priceToStart
     priceCeil = priceToStart
     if(priceFloor == 1):
         priceCeil = 1000
     elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards): priceFloor = priceCeil
         priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
+
+    # log in
+    if LogIn(driver, TCG):
+      driver.quit()
+      quit()
 
     setPriceRange(driver, priceFloor, priceCeil, TCG)
     cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
