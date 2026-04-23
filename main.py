@@ -6,12 +6,7 @@ import signal
 import logging
 from datetime import datetime
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
-from selenium_stealth import stealth
+from seleniumbase import SB
 
 from dotenv import load_dotenv, set_key
 
@@ -57,42 +52,47 @@ def handler(signum, frame):
 
 
 #? Interaction with website
-def LogIn(driver, TCG):
+def LogIn(TCG):
     global username, password, cardmarketURL
 
-    # Open the webpage and wait for it to load
     URL = cardmarketURL + TCG
-    driver.get(URL)
-    while True:
-      if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver, 2, 5):
-        if (timeoutCounter == 10):
-          logging.warning(f"Timeout while loading webpage")
-          return True
-        continue
-      break
+
+    # Open the webpage and wait for it to load
+    with SB(uc=True, test=True, incognito=True, locale="en") as sb:
+        sb.uc_open_with_reconnect(URL)
+
+        #while True:
+        #    if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver, 2, 5):
+        #        if (timeoutCounter == 10):
+        #        logging.warning(f"Timeout while loading webpage")
+        #        return True
+        #        continue
+        #break
 
     #logging.info("page is opened")
     # Reject cookies (this takes care of future problems)
     try:
-        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form[2]/div/button").click()
+        sb.click('button:contains("Only required cookies")')
     except:
         pass
 
     # Log in
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[1]/div/input").send_keys(username)
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/div[2]/div/input").send_keys(password)
-    driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/input[3]").click()
-    
+    sb.type('input[name="username"]', username)
+    sb.type('input[name="password"]', password)
+    sb.uc_click('button[type="submit"]', reconnect_time=3)
+
+    sb.uc_gui_click_captcha()
+
     # Wait until page is loaded
-    while True:
-        if WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver, 2, 5):
-            if (timeoutCounter == 10):
-                logging.warning("Timeout on changing price range")
-                driver.quit()
-                quit()
-            driver.refresh()
-            continue
-        break
+    #while True:
+    #    if WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver, 2, 5):
+    #        if (timeoutCounter == 10):
+    #            logging.warning("Timeout on changing price range")
+    #            driver.quit()
+    #            quit()
+    #        driver.refresh()
+    #        continue
+    #    break
 
     logging.info("Logged in")
 
@@ -479,35 +479,6 @@ def main():
     # Select TCG to check
     TCG = selectTCG()
 
-    # Setup browser options
-    try:
-        options = webdriver.ChromeOptions()
-        options.binary_location = os.getenv("BROWSER")
-
-        # random user agents to choose from
-        user_agents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
-            ]
-        user_agent = random.choice(user_agents)
-        options.add_argument("--no-sandbox")
-        options.add_argument(f'user-agent={user_agent}')
-        options.add_argument("--headless=new")
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])   # these two seem necessary to avoid bot detection
-        options.add_experimental_option("useAutomationExtension", False)
-        driver = webdriver.Chrome(options=options)
-        stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
-    except Exception as e:
-        logging.error(e)
-        exit(1)
-
     # To show overall change in the end
     global netChange, stageChange
     netChange = 0
@@ -521,8 +492,7 @@ def main():
         priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
     # log in
-    if LogIn(driver, TCG):
-      driver.quit()
+    if not LogIn(TCG):
       quit()
 
     setPriceRange(driver, priceFloor, priceCeil, TCG)
