@@ -72,9 +72,9 @@ def LogIn(driver, TCG):
       break
 
     #logging.info("page is opened")
-    # Accept cookies (this takes care of future problems)
+    # Reject cookies (this takes care of future problems)
     try:
-        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form/div/button").click()
+        driver.find_element(By.XPATH, "/html/body/header/div[1]/div/div/form[2]/div/button").click()
     except:
         pass
 
@@ -84,8 +84,16 @@ def LogIn(driver, TCG):
     driver.find_element(By.XPATH, "/html/body/header/nav[1]/ul/li/div/form/input[3]").click()
     
     # Wait until page is loaded
-    WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver)
-    #logging.info("Logged in")
+    while True:
+        if WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver):
+            if (timeoutCounter == 10):
+                logging.warning("Timeout on changing price range")
+                return True
+            driver.refresh()
+            continue
+        break
+    
+    logging.info("Logged in")
 
 def changePriceRange(priceFloor, driver, priceCeil, TCG):
     global stageChange, netChange
@@ -492,6 +500,8 @@ def main():
         options.add_argument("--headless")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])   # this seems to help
+        options.add_experimental_option('useAutomationExtension', False)
         driver = webdriver.Chrome(options=options)
         stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
         #logging.info("set")
@@ -506,8 +516,8 @@ def main():
 
     #logging.info("going to log in")
     if LogIn(driver, TCG):
-      driver.quit()
-      quit()
+        driver.quit()
+        quit()
 
     priceFloor = priceToStart
     priceCeil = priceToStart
