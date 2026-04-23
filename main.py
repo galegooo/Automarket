@@ -484,7 +484,6 @@ def main():
         options = webdriver.ChromeOptions()
         options.binary_location = os.getenv("BROWSER")
 
-        #logging.info("setting browser options")
         # random user agents to choose from
         user_agents = [
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
@@ -498,14 +497,13 @@ def main():
         user_agent = random.choice(user_agents)
         options.add_argument("--no-sandbox")
         options.add_argument(f'user-agent={user_agent}')
-        options.add_argument("--headless")
+        options.add_argument("--headless=new")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--blink-settings=imagesEnabled=false")    # disable loading images
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option('useAutomationExtension', False)
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])   # these two seem necessary to avoid bot detection
+        options.add_experimental_option("useAutomationExtension", False)
         driver = webdriver.Chrome(options=options)
         stealth(driver, languages=["en-US", "en"], vendor="Google Inc.", platform="Win32", webgl_vendor="Intel Inc.", renderer="Intel Iris OpenGL Engine", fix_hairline=True)   # needed to bypass cloudflare
-        #logging.info("set")
     except Exception as e:
         logging.error(e)
         exit(1)
