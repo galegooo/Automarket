@@ -60,6 +60,7 @@ def LogIn(TCG):
     # Open the webpage and wait for it to load
     with SB(uc=True, test=True, incognito=True, locale="en") as sb:
         sb.uc_open_with_reconnect(URL)
+        sb.uc_gui_click_captcha()
 
         #while True:
         #    if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver, 2, 5):
@@ -69,19 +70,19 @@ def LogIn(TCG):
         #        continue
         #break
 
-    #logging.info("page is opened")
-    # Reject cookies (this takes care of future problems)
-    try:
-        sb.click('button:contains("Only required cookies")')
-    except:
-        pass
+        #logging.info("page is opened")
+        # Reject cookies (this takes care of future problems)
+        try:
+            sb.click('button:contains("Only required cookies")')
+        except:
+            pass
 
-    # Log in
-    sb.type('input[name="username"]', username)
-    sb.type('input[name="password"]', password)
-    sb.uc_click('button[type="submit"]', reconnect_time=3)
+        # Log in
+        sb.type('input[name="username"]', username)
+        sb.type('input[name="password"]', password)
+        sb.uc_click('button[type="submit"]', reconnect_time=3)
 
-    sb.uc_gui_click_captcha()
+        sb.uc_gui_click_captcha()
 
     # Wait until page is loaded
     #while True:
