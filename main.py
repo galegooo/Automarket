@@ -52,14 +52,12 @@ def handler(signum, frame):
 
 
 #? Interaction with website
-def LogIn(TCG):
+def LogIn(sb, TCG):
     global username, password, cardmarketURL
 
     URL = cardmarketURL + TCG
 
     # Open the webpage and wait for it to load
-    sb = SB(uc=True, test=True, incognito=True, locale="en")
-
     sb.uc_open_with_reconnect(URL)
     sb.uc_gui_click_captcha()
 
@@ -464,31 +462,32 @@ def main():
     elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards): priceFloor = priceCeil
         priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
-    # log in
-    sb = LogIn(TCG)
+    with SB(uc=True, test=True, incognito=True, locale="en") as sb:
+        # log in
+        LogIn(sb, TCG)
 
-    setPriceRange(sb, priceFloor, priceCeil, TCG)
-    cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
-    while(cardnumber == 300):
-        logging.info("\tRange has 300+ cards")
-        if(priceFloor != priceCeil):
-            priceFloor = round(priceFloor + 0.01, 2)
-            setPriceRange(driver, priceFloor, priceCeil, TCG)
-            cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
-        else:
-            break
+        setPriceRange(sb, priceFloor, priceCeil, TCG)
+        cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
+        while(cardnumber == 300):
+            logging.info("\tRange has 300+ cards")
+            if(priceFloor != priceCeil):
+                priceFloor = round(priceFloor + 0.01, 2)
+                setPriceRange(driver, priceFloor, priceCeil, TCG)
+                cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
+            else:
+                break
 
-    if(pageToStart != 1):
-        skipToPage(pageToStart, priceFloor, priceCeil, TCG)
+        if(pageToStart != 1):
+            skipToPage(pageToStart, priceFloor, priceCeil, TCG)
 
-    #* Iterate through every card
-    iterateCards(driver, priceFloor, priceCeil, cardnumber, TCG)
-            
-    now = datetime.now()
-    finishingTime = now.strftime("%Y/%m/%d %H:%M:%S")
-    logging.info(f"Finished review at {finishingTime} - Net change is {round(netChange, 2)}")
-    driver.quit()
-    quit()
+        #* Iterate through every card
+        iterateCards(driver, priceFloor, priceCeil, cardnumber, TCG)
+                
+        now = datetime.now()
+        finishingTime = now.strftime("%Y/%m/%d %H:%M:%S")
+        logging.info(f"Finished review at {finishingTime} - Net change is {round(netChange, 2)}")
+        driver.quit()
+        quit()
 
 
 if(__name__ == "__main__"):
