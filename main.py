@@ -58,44 +58,27 @@ def LogIn(TCG):
     URL = cardmarketURL + TCG
 
     # Open the webpage and wait for it to load
-    with SB(uc=True, test=True, incognito=True, locale="en") as sb:
-        sb.uc_open_with_reconnect(URL)
-        sb.uc_gui_click_captcha()
+    sb = SB(uc=True, test=True, incognito=True, locale="en")
 
-        #while True:
-        #    if WaitForPage("/html/body/header/div[1]/div/div/form/div/button", driver, 2, 5):
-        #        if (timeoutCounter == 10):
-        #        logging.warning(f"Timeout while loading webpage")
-        #        return True
-        #        continue
-        #break
+    sb.uc_open_with_reconnect(URL)
+    sb.uc_gui_click_captcha()
 
-        #logging.info("page is opened")
-        # Reject cookies (this takes care of future problems)
-        try:
-            sb.click('button:contains("Only required cookies")')
-        except:
-            pass
+    # Reject cookies (this takes care of future problems)
+    try:
+        sb.click('button:contains("Only required cookies")')
+    except:
+        pass
 
-        # Log in
-        sb.type('input[name="username"]', username)
-        sb.type('input[name="password"]', password)
-        sb.uc_click('button[type="submit"]', reconnect_time=3)
+    # Log in
+    sb.type('input[name="username"]', username)
+    sb.type('input[name="userPassword"]', password)
+    sb.uc_click('button[type="submit"]', reconnect_time=3)
 
-        sb.uc_gui_click_captcha()
-
-    # Wait until page is loaded
-    #while True:
-    #    if WaitForPage("/html/body/header/nav[1]/ul/li/ul/li[2]/a", driver, 2, 5):
-    #        if (timeoutCounter == 10):
-    #            logging.warning("Timeout on changing price range")
-    #            driver.quit()
-    #            quit()
-    #        driver.refresh()
-    #        continue
-    #    break
+    sb.uc_gui_click_captcha()
 
     logging.info("Logged in")
+
+    return sb
 
 def changePriceRange(priceFloor, driver, priceCeil, TCG):
     global stageChange, netChange
@@ -335,30 +318,19 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
     driver.switch_to.window(driver.window_handles[0])
     return False
         
-def setPriceRange(driver, price, priceCeil, TCG):
+def setPriceRange(sb, price, priceCeil, TCG):
     global cardmarketURL
 
     # Filter by price
     URLaddon = f"?minPrice={price}&maxPrice={priceCeil}"
     link = cardmarketURL + TCG + "/Stock/Offers/Singles" + URLaddon
-    driver.get(link)
+    sb.uc_open_with_reconnect(link)
+    sb.uc_gui_click_captcha()
 
     if(price != priceCeil):
         logging.info(f"---->Checking from {price} to {priceCeil}")
     else:
         logging.info(f"---->Checking {price}")
-
-    while True:
-        if WaitForPage("/html/body/main/div[2]/div/h1", driver, 10, 40):
-            if (timeoutCounter == 10):
-                logging.warning("Timeout on changing price range")
-                driver.quit()
-                quit()
-            driver.refresh()
-            continue
-        break
-
-    return False
 
 def iterateCards(driver, priceFloor, priceCeil, cardsInRange, TCG):
     global cardsMoved # To make sure every card is seen
@@ -493,10 +465,9 @@ def main():
         priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
     # log in
-    if not LogIn(TCG):
-      quit()
+    sb = LogIn(TCG)
 
-    setPriceRange(driver, priceFloor, priceCeil, TCG)
+    setPriceRange(sb, priceFloor, priceCeil, TCG)
     cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
     while(cardnumber == 300):
         logging.info("\tRange has 300+ cards")
