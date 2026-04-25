@@ -108,12 +108,12 @@ def changePriceRange(priceFloor, driver, priceCeil, TCG):
     elif(priceFloor > priceCeil):
         priceFloor = priceCeil
         
-    setPriceRange(driver, priceFloor, priceCeil, TCG)
+    setPriceRange(driver, priceFloor, priceCeil, TCG, 1)
     cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
     while(cardnumber == 300):
         if(priceFloor != priceCeil):
             priceFloor = round(priceFloor + 0.01, 2)
-            setPriceRange(driver, priceFloor, priceCeil, TCG)
+            setPriceRange(driver, priceFloor, priceCeil, TCG, 1)
             cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
         else:
             break
@@ -128,25 +128,6 @@ def checkForMaxRange(driver, priceFloor, priceCeil):
     except:
         range = driver.find_element(By.XPATH, "/html/body/main/div[3]/div[2]/div[1]/div[1]/span/span[1]").text
         return range
-
-def skipToPage(page, priceFloor, priceCeil, TCG):
-    global cardmarketURL
-
-    logging.info(f"Skipping to page {page}")
-    
-    URLaddon = f"?minPrice={priceFloor}&maxPrice={priceCeil}&site={page}"
-    link = cardmarketURL + TCG + "/Stock/Offers/Singles" + URLaddon
-    driver.get(link)
-
-    while True:
-        if WaitForPage("/html/body/main/div[6]/div[2]", driver):
-            if (timeoutCounter == 10):
-                logging.warning("Timeout on changing price range")
-                driver.quit()
-                return True
-            driver.refresh()
-            continue
-        break
 
 
 #? Algorithm functions
@@ -333,11 +314,11 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
     driver.switch_to.window(driver.window_handles[0])
     return False
         
-def setPriceRange(driver, price, priceCeil, TCG):
+def setPriceRange(driver, price, priceCeil, TCG, page):
     global cardmarketURL
 
     # Filter by price
-    URLaddon = f"?minPrice={price}&maxPrice={priceCeil}"
+    URLaddon = f"?minPrice={price}&maxPrice={priceCeil}&site={page}"
     link = cardmarketURL + TCG + "/Stock/Offers/Singles" + URLaddon
     driver.get(link)
 
@@ -438,6 +419,7 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange, TCG):
             WaitForPage(table, driver)
         except: # No more pages, change price range
             priceFloor, priceCeil, cardsInRange = changePriceRange(priceFloor, driver, priceCeil, TCG)
+            firstPage = True
             if(priceFloor == False):
                 break   # end
 
@@ -526,19 +508,16 @@ def main():
     elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards): priceFloor = priceCeil
         priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
-    setPriceRange(driver, priceFloor, priceCeil, TCG)
+    setPriceRange(driver, priceFloor, priceCeil, TCG, pageToStart)
     cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
     while(cardnumber == 300):
         logging.info("\tRange has 300+ cards")
         if(priceFloor != priceCeil):
             priceFloor = round(priceFloor + 0.01, 2)
-            setPriceRange(driver, priceFloor, priceCeil, TCG)
+            setPriceRange(driver, priceFloor, priceCeil, TCG, pageToStart)
             cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
         else:
             break
-
-    if(pageToStart != 1):
-        skipToPage(pageToStart, priceFloor, priceCeil, TCG)
 
     #* Iterate through every card
     iterateCards(driver, priceFloor, priceCeil, cardnumber, TCG)
