@@ -19,18 +19,18 @@ from dotenv import load_dotenv, set_key
 #? Misc.
 def selectTCG():
     # check previous TCG
-    previousTCG = os.getenv("TCG")
-    
+    #previousTCG = os.getenv("TCG")
+    TCG = os.getenv("TCG")
     # select new one
-    if(previousTCG == "Magic"):
-        TCG = "Pokemon"
-    elif(previousTCG == "Pokemon"):
-        TCG = "YuGiOh"
-    elif(previousTCG == "YuGiOh"):
-        TCG = "Magic"
+    #if(previousTCG == "Magic"):
+    #    TCG = "Pokemon"
+    #elif(previousTCG == "Pokemon"):
+    #    TCG = "YuGiOh"
+    #elif(previousTCG == "YuGiOh"):
+    #    TCG = "Magic"
 
     # save current TCG
-    set_key(dotenv_path=".env", key_to_set="TCG", value_to_set=TCG)
+    #set_key(dotenv_path=".env", key_to_set="TCG", value_to_set=TCG)
 
     logging.info(f"Reviewing {TCG} cards")
     return TCG
@@ -317,6 +317,9 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
 def setPriceRange(driver, price, priceCeil, TCG, page):
     global cardmarketURL
 
+    if(page != 1):
+        logging.info(f"Skipping to page {page}")
+
     # Filter by price
     URLaddon = f"?minPrice={price}&maxPrice={priceCeil}&site={page}"
     link = cardmarketURL + TCG + "/Stock/Offers/Singles" + URLaddon
@@ -505,8 +508,8 @@ def main():
     priceCeil = priceToStart
     if(priceFloor == 1):
         priceCeil = 1000
-    elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards): priceFloor = priceCeil
-        priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
+    #elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards): priceFloor = priceCeil
+    #    priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
     setPriceRange(driver, priceFloor, priceCeil, TCG, pageToStart)
     cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
