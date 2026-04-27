@@ -508,8 +508,8 @@ def main():
     priceCeil = priceToStart
     if(priceFloor == 1):
         priceCeil = 1000
-    #elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards): priceFloor = priceCeil
-    #    priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
+    else:
+        priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
     setPriceRange(driver, priceFloor, priceCeil, TCG, pageToStart)
     cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
