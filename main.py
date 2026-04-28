@@ -111,6 +111,7 @@ def changePriceRange(priceFloor, driver, priceCeil, TCG):
     setPriceRange(driver, priceFloor, priceCeil, TCG, 1)
     cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
     while(cardnumber == 300):
+        logging.info("\tRange has 300+ cards")
         if(priceFloor != priceCeil):
             priceFloor = round(priceFloor + 0.01, 2)
             setPriceRange(driver, priceFloor, priceCeil, TCG, 1)
@@ -317,9 +318,6 @@ def HandleCard(driver, card, priceFloor, priceCeil):    # card = /html/body/main
 def setPriceRange(driver, price, priceCeil, TCG, page):
     global cardmarketURL
 
-    if(page != 1):
-        logging.info(f"Skipping to page {page}")
-
     # Filter by price
     URLaddon = f"?minPrice={price}&maxPrice={priceCeil}&site={page}"
     link = cardmarketURL + TCG + "/Stock/Offers/Singles" + URLaddon
@@ -329,6 +327,9 @@ def setPriceRange(driver, price, priceCeil, TCG, page):
         logging.info(f"---->Checking from {price} to {priceCeil}")
     else:
         logging.info(f"---->Checking {price}")
+
+    if(page != 1):
+        logging.info(f"\tSkipping to page {page}")
 
     while True:
         if WaitForPage("/html/body/main/div[2]/div/h1", driver):
@@ -350,7 +351,7 @@ def iterateCards(driver, priceFloor, priceCeil, cardsInRange, TCG):
         #? this check is necessary for when priceCeil == priceFloor && more than 300 cards
         cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
         if(cardnumber == 300):
-            logging.info("\tRange has 300+ cards")
+            #logging.info("\tRange has 300+ cards")
             tooManyCards = True
             table = "/html/body/main/div[3]/div[2]/div[3]/div[2]"
         else:
@@ -508,7 +509,7 @@ def main():
     priceCeil = priceToStart
     if(priceFloor == 1):
         priceCeil = 1000
-    else:
+    elif(priceFloor > 0.1):   # below 10 cents search each value individually (lots of cards)
         priceCeil = round(priceFloor + 0.2 * priceFloor, 2)
 
     setPriceRange(driver, priceFloor, priceCeil, TCG, pageToStart)
@@ -520,7 +521,7 @@ def main():
             setPriceRange(driver, priceFloor, priceCeil, TCG, pageToStart)
             cardnumber = checkForMaxRange(driver, priceFloor, priceCeil)
         else:
-            break
+            break   # in this case, priceFloor == priceCeil and there are more than 300 cards. no other way than to check and hope that enough cards get sent to other prices
 
     #* Iterate through every card
     iterateCards(driver, priceFloor, priceCeil, cardnumber, TCG)
