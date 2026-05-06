@@ -19,18 +19,18 @@ from dotenv import load_dotenv, set_key
 #? Misc.
 def selectTCG():
     # check previous TCG
-    #previousTCG = os.getenv("TCG")
-    TCG = os.getenv("TCG")
+    previousTCG = os.getenv("TCG")
+
     # select new one
-    #if(previousTCG == "Magic"):
-    #    TCG = "Pokemon"
-    #elif(previousTCG == "Pokemon"):
-    #    TCG = "YuGiOh"
-    #elif(previousTCG == "YuGiOh"):
-    #    TCG = "Magic"
+    if(previousTCG == "Magic"):
+        TCG = "Pokemon"
+    elif(previousTCG == "Pokemon"):
+        TCG = "YuGiOh"
+    elif(previousTCG == "YuGiOh"):
+        TCG = "Magic"
 
     # save current TCG
-    #set_key(dotenv_path=".env", key_to_set="TCG", value_to_set=TCG)
+    set_key(dotenv_path=".env", key_to_set="TCG", value_to_set=TCG)
 
     logging.info(f"Reviewing {TCG} cards")
     return TCG
